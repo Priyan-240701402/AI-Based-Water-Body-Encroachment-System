@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Citizen Dashboard | JalRaksha Water Protection{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  
+  <!-- Header -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-3">
+    <div>
+      <span class="badge bg-primary-subtle text-primary px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-person-check me-1"></i> Citizen Grievance Portal
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">My Reported Grievances</h2>
+      <p class="text-muted small mb-0">Track and manage water body encroachment complaints you have submitted.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('web.new_complaint') }}" id="reportNewBtnDash" class="btn btn-jr-primary shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Report an Issue
+      </a>
+    </div>
+  </div>
+
+  <!-- Summary Metric Cards (Real Data) -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Total Complaints</div>
+        <div class="fs-2 fw-bold text-dark font-heading">{{ stats.total }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-folder2-open me-1"></i> All submissions</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-amber">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Submitted / Pending</div>
+        <div class="fs-2 fw-bold text-amber font-heading" style="color: var(--jr-amber-warning);">{{ stats.pending }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-clock-history me-1"></i> Awaiting survey</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-purple">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Under Review</div>
+        <div class="fs-2 fw-bold text-primary font-heading">{{ stats.under_verification }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-shield-check me-1"></i> Officer assigned</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-green">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Resolved</div>
+        <div class="fs-2 fw-bold text-success font-heading">{{ stats.resolved }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-check-circle me-1"></i> Action completed</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complaints Section Card -->
+  <div class="jr-card border-0 overflow-hidden shadow-sm">
+    
+    <!-- Controls: Search, Filter, Sort -->
+    <div class="p-3 bg-white border-bottom">
+      <div class="row g-2 align-items-center justify-content-between">
+        <div class="col-md-4">
+          <h5 class="fw-bold font-heading mb-0 text-dark">
+            <i class="bi bi-list-stars text-primary me-2"></i>Submitted Reports List
+          </h5>
+        </div>
+        <div class="col-md-8 d-flex flex-wrap gap-2 justify-content-md-end">
+          <!-- Search input -->
+          <div class="input-group input-group-sm w-auto" style="min-width: 220px;">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="dashSearch" class="form-control border-start-0 ps-0" placeholder="Search by ID or title...">
+          </div>
+          <!-- Status Filter -->
+          <select id="statusFilter" class="form-select form-select-sm w-auto">
+            <option value="">All Statuses</option>
+            <option value="SUBMITTED">Submitted</option>
+            <option value="AI_REVIEWED">Preliminary Review</option>
+            <option value="ASSIGNED">Under Review</option>
+            <option value="UNDER_VERIFICATION">Field Verification</option>
+            <option value="ACTION_REQUIRED">Action Required</option>
+            <option value="RESOLVED">Resolved</option>
+          </select>
+          <!-- Sort dropdown -->
+          <select id="sortSelect" class="form-select form-select-sm w-auto">
+            <option value="desc">Newest First</option>
+            <option value="asc">Oldest First</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="citizenComplaintsTable">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th scope="col" class="ps-4">Complaint ID</th>
+            <th scope="col">Title & Water Body</th>
+            <th scope="col">Location Coordinates</th>
+            <th scope="col">Date Submitted</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody id="complaintTableBody">
+          {% if complaints %}
+            {% for c in complaints %}
+              <tr class="complaint-row" data-id="{{ c.id }}" data-title="{{ c.title|lower }}" data-status="{{ c.status }}" data-date="{{ c.created_at.isoformat() if c.created_at else '' }}">
+                <td class="ps-4 font-monospace fw-bold text-primary">#{{ c.id }}</td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ c.title }}</div>
+                  <div class="small text-muted">
+                    <i class="bi bi-droplet-fill text-info me-1"></i>
+                    {{ c.water_body.name if c.water_body else "Unmapped Water Body" }}
+                  </div>
+                </td>
+                <td class="small font-monospace text-muted">
+                  <i class="bi bi-geo-alt me-1 text-danger"></i>
+                  {{ "%.4f"|format(c.latitude) }}, {{ "%.4f"|format(c.longitude) }}
+                </td>
+                <td class="small text-muted">
+                  {{ c.created_at.strftime('%d %b %Y, %H:%M') if c.created_at else "Recently" }}
+                </td>
+                <td>
+                  {% if c.status == 'SUBMITTED' %}
+                    <span class="jr-badge badge-status-SUBMITTED"><i class="bi bi-clock me-1"></i> Submitted</span>
+                  {% elif c.status == 'AI_REVIEWED' %}
+                    <span class="jr-badge badge-status-AI_REVIEWED"><i class="bi bi-clipboard-check me-1"></i> Preliminary Review</span>
+                  {% elif c.status == 'ASSIGNED' %}
+                    <span class="jr-badge badge-status-ASSIGNED"><i class="bi bi-person-check me-1"></i> Assigned to Authority</span>
+                  {% elif c.status == 'UNDER_VERIFICATION' %}
+                    <span class="jr-badge badge-status-UNDER_VERIFICATION"><i class="bi bi-search me-1"></i> Under Verification</span>
+                  {% elif c.status == 'ACTION_REQUIRED' %}
+                    <span class="jr-badge badge-status-ACTION_REQUIRED"><i class="bi bi-exclamation-triangle me-1"></i> Action Pending</span>
+                  {% elif c.status == 'RESOLVED' %}
+                    <span class="jr-badge badge-status-RESOLVED"><i class="bi bi-check-circle me-1"></i> Resolved</span>
+                  {% else %}
+                    <span class="jr-badge badge-status-REJECTED">{{ c.status }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/citizen/complaints/{{ c.id }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    <i class="bi bi-eye me-1"></i> View Details
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr id="emptyStateRow">
+              <td colspan="6" class="text-center py-5">
+                <div class="py-4">
+                  <i class="bi bi-inbox fs-1 text-secondary opacity-50 d-block mb-2"></i>
+                  <h6 class="fw-bold text-dark mb-1">No Complaints Found</h6>
+                  <p class="text-muted small mb-3">You haven't reported any water body encroachment issues yet.</p>
+                  <a href="{{ url_for('web.new_complaint') }}" class="btn btn-jr-primary btn-sm">Report Your First Issue</a>
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('dashSearch');
+  const filterSelect = document.getElementById('statusFilter');
+  const sortSelect = document.getElementById('sortSelect');
+  const tbody = document.getElementById('complaintTableBody');
+  const rows = Array.from(document.querySelectorAll('.complaint-row'));
+
+  function filterAndSort() {
+    const searchTerm = searchInput.value.trim().toLowerCase();
+    const statusVal = filterSelect.value.toUpperCase();
+    const sortVal = sortSelect.value;
+
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const id = row.getAttribute('data-id');
+      const title = row.getAttribute('data-title');
+      const status = row.getAttribute('data-status');
+
+      const matchesSearch = !searchTerm || id.includes(searchTerm) || title.includes(searchTerm);
+      const matchesStatus = !statusVal || status === statusVal;
+
+      if (matchesSearch && matchesStatus) {
+        row.style.display = '';
+        visibleCount++;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    // Sorting
+    const visibleRows = rows.filter(r => r.style.display !== 'none');
+    visibleRows.sort((a, b) => {
+      const dateA = new Date(a.getAttribute('data-date') || 0);
+      const dateB = new Date(b.getAttribute('data-date') || 0);
+      return sortVal === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+    visibleRows.forEach(r => tbody.appendChild(r));
+  }
+
+  if (searchInput) searchInput.addEventListener('input', filterAndSort);
+  if (filterSelect) filterSelect.addEventListener('change', filterAndSort);
+  if (sortSelect) sortSelect.addEventListener('change', filterAndSort);
+});
+</script>
+{% endblock %}

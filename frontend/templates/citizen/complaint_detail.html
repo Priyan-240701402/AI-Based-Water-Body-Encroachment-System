@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Complaint #{{ complaint.id }} | JalRaksha Complaint Detail{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumb & Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-secondary font-monospace">Grievance #{{ complaint.id }}</span>
+        <span class="text-muted small">Submitted on {{ complaint.created_at.strftime('%d %b %Y, %H:%M') if complaint.created_at else "Recently" }}</span>
+      </div>
+      <h2 class="fw-bold font-heading mb-0 text-dark">{{ complaint.title }}</h2>
+    </div>
+    <div>
+      <a href="{{ url_for('web.citizen_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Visual Lifecycle Progress Tracker -->
+  <div class="jr-card p-4 mb-4 bg-white border-0 shadow-sm">
+    <h6 class="fw-bold font-heading text-dark mb-3"><i class="bi bi-diagram-2 text-primary me-2"></i>Complaint Progress Tracker</h6>
+    
+    <ul class="lifecycle-tracker">
+      <!-- Step 1: Submitted -->
+      <li class="lifecycle-step completed">
+        <div class="lifecycle-icon"><i class="bi bi-check-lg"></i></div>
+        <div class="lifecycle-label">Complaint Submitted</div>
+      </li>
+
+      <!-- Step 2: Under Review -->
+      <li class="lifecycle-step {% if complaint.status in ['AI_REVIEWED', 'ASSIGNED', 'UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED', 'REJECTED'] %}completed{% else %}active{% endif %}">
+        <div class="lifecycle-icon">
+          {% if complaint.status in ['AI_REVIEWED', 'ASSIGNED', 'UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED', 'REJECTED'] %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            <i class="bi bi-clock"></i>
+          {% endif %}
+        </div>
+        <div class="lifecycle-label">Preliminary Review</div>
+      </li>
+
+      <!-- Step 3: Assigned to Authority -->
+      <li class="lifecycle-step {% if complaint.status in ['ASSIGNED', 'UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED'] %}completed{% elif complaint.status == 'AI_REVIEWED' %}active{% endif %}">
+        <div class="lifecycle-icon">
+          {% if complaint.status in ['ASSIGNED', 'UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED'] %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            3
+          {% endif %}
+        </div>
+        <div class="lifecycle-label">Assigned to Authority</div>
+      </li>
+
+      <!-- Step 4: Official Verification -->
+      <li class="lifecycle-step {% if complaint.status in ['UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED'] %}completed{% elif complaint.status == 'ASSIGNED' %}active{% endif %}">
+        <div class="lifecycle-icon">
+          {% if complaint.status in ['UNDER_VERIFICATION', 'ACTION_REQUIRED', 'ACTION_TAKEN', 'RESOLVED'] %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            4
+          {% endif %}
+        </div>
+        <div class="lifecycle-label">Official Field Verification</div>
+      </li>
+
+      <!-- Step 5: Action Taken -->
+      <li class="lifecycle-step {% if complaint.status in ['ACTION_TAKEN', 'RESOLVED'] %}completed{% elif complaint.status == 'ACTION_REQUIRED' %}active{% endif %}">
+        <div class="lifecycle-icon">
+          {% if complaint.status in ['ACTION_TAKEN', 'RESOLVED'] %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            5
+          {% endif %}
+        </div>
+        <div class="lifecycle-label">Action Taken</div>
+      </li>
+
+      <!-- Step 6: Resolved -->
+      <li class="lifecycle-step {% if complaint.status == 'RESOLVED' %}completed{% endif %}">
+        <div class="lifecycle-icon">
+          {% if complaint.status == 'RESOLVED' %}
+            <i class="bi bi-check-lg"></i>
+          {% else %}
+            6
+          {% endif %}
+        </div>
+        <div class="lifecycle-label">Resolved</div>
+      </li>
+    </ul>
+  </div>
+
+  <div class="row g-4">
+    
+    <!-- Left Column: Incident Overview, Map, Evidence & Status History -->
+    <div class="col-lg-7">
+      
+      <!-- Details Card -->
+      <div class="jr-card p-4 mb-4 border-0 shadow-sm bg-white">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-geo-alt-fill text-danger me-2"></i>Reported Location & Details
+        </h5>
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Water Body Name</span>
+            <strong class="text-dark">
+              {{ complaint.water_body.name if complaint.water_body else "Unmapped Water Body" }}
+              {% if complaint.water_body %}
+                <span class="badge bg-info-subtle text-info-emphasis ms-1">{{ complaint.water_body.type }}</span>
+              {% endif %}
+            </strong>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">District / Jurisdiction Zone</span>
+            <strong class="text-dark">{{ complaint.water_body.district if complaint.water_body else "Central Zone" }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">GPS Coordinates</span>
+            <span class="font-monospace text-dark">{{ "%.6f"|format(complaint.latitude) }}, {{ "%.6f"|format(complaint.longitude) }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Current Status</span>
+            {% if complaint.status == 'SUBMITTED' %}
+              <span class="jr-badge badge-status-SUBMITTED">Submitted</span>
+            {% elif complaint.status == 'AI_REVIEWED' %}
+              <span class="jr-badge badge-status-AI_REVIEWED">Preliminary Review</span>
+            {% elif complaint.status == 'ASSIGNED' %}
+              <span class="jr-badge badge-status-ASSIGNED">Assigned</span>
+            {% elif complaint.status == 'UNDER_VERIFICATION' %}
+              <span class="jr-badge badge-status-UNDER_VERIFICATION">Field Verification</span>
+            {% elif complaint.status == 'RESOLVED' %}
+              <span class="jr-badge badge-status-RESOLVED">Resolved</span>
+            {% else %}
+              <span class="jr-badge badge-status-REJECTED">{{ complaint.status }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <span class="text-muted small d-block mb-1">Description</span>
+          <p class="p-3 bg-light rounded-3 mb-0 small text-dark border">
+            {{ complaint.description }}
+          </p>
+        </div>
+
+        <!-- Geospatial Map View -->
+        <div class="mb-3">
+          <span class="text-muted small d-block mb-2"><i class="bi bi-map me-1"></i> Interactive Incident Location Map</span>
+          <div id="detailMap"
+               data-complaint-id="{{ complaint.id }}"
+               data-complaint-title="{{ complaint.title }}"
+               data-waterbody-name="{{ complaint.water_body.name if complaint.water_body else '' }}"
+               class="jr-map-container"
+               style="height: 280px;"></div>
+          {% if complaint.water_body and complaint.water_body.boundary_data %}
+            <script id="detail-boundary-json" type="application/json">
+              {{ complaint.water_body.boundary_data|safe }}
+            </script>
+          {% endif %}
+        </div>
+
+        <!-- Evidence Photographs / Documents -->
+        {% if complaint.evidence %}
+          <div class="mt-4 border-top pt-3">
+            <h6 class="fw-bold font-heading small text-uppercase text-secondary mb-3">
+              <i class="bi bi-camera me-1"></i> Uploaded Evidence ({{ complaint.evidence|length }})
+            </h6>
+            <div class="d-flex flex-wrap gap-3">
+              {% for ev in complaint.evidence %}
+                <div class="border rounded-3 p-2 bg-light text-center shadow-sm" style="width: 130px;">
+                  {% if 'image' in ev.file_type %}
+                    <a href="/{{ ev.file_path }}" target="_blank" title="Click to view full image">
+                      <img src="/{{ ev.file_path }}" alt="Evidence Photo" class="img-fluid rounded mb-2" style="height: 80px; object-fit: cover; width: 100%;">
+                    </a>
+                  {% else %}
+                    <div class="p-3 text-secondary"><i class="bi bi-file-earmark-pdf fs-1 text-danger"></i></div>
+                  {% endif %}
+                  <div class="text-truncate small text-muted px-1" title="{{ ev.original_filename }}" style="font-size: 0.72rem;">
+                    {{ ev.original_filename or "Document" }}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Status Audit History Timeline -->
+      <div class="jr-card p-4 border-0 shadow-sm bg-white">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-clock-history text-primary me-2"></i>Status History & Remarks
+        </h5>
+        
+        <div class="jr-timeline mt-3">
+          {% if complaint.status_history %}
+            {% for h in complaint.status_history %}
+              <div class="jr-timeline-item">
+                <div class="jr-timeline-dot"></div>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="badge bg-light text-dark border">{{ h.new_status }}</span>
+                  <span class="text-muted small" style="font-size: 0.75rem;">
+                    {{ h.changed_at.strftime('%d %b %Y, %H:%M') if h.changed_at else "" }}
+                  </span>
+                </div>
+                <p class="mb-1 small text-dark fw-medium">{{ h.remarks or "Status transition logged." }}</p>
+                <div class="text-muted small" style="font-size: 0.72rem;">
+                  <i class="bi bi-person me-1"></i> Updated by: {{ h.author.name if h.author else "Official Assessment System" }}
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p class="small text-muted mb-0">Complaint submitted. Pending official survey updates.</p>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Citizen-Facing Plain-Language Assessment Card -->
+    <div class="col-lg-5">
+      
+      <div class="jr-card p-4 border-0 shadow-sm bg-white mb-4">
+        
+        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+          <h5 class="fw-bold font-heading mb-0 text-dark">
+            <i class="bi bi-clipboard-check text-primary me-2"></i>Preliminary Review Status
+          </h5>
+          <span class="badge bg-success-subtle text-success">Review Completed</span>
+        </div>
+
+        <!-- Plain-Language Outcome Callout -->
+        <div class="assessment-box mb-4 {% if 'Verification' in complaint.classification or 'Possible' in complaint.classification %}warning-state{% endif %}">
+          <div class="text-uppercase small fw-bold text-secondary mb-1">Assessment Outcome</div>
+          <h5 class="fw-bold mb-2 font-heading {% if 'Verification' in complaint.classification or 'Possible' in complaint.classification %}text-dark{% else %}text-success{% endif %}">
+            {% if 'Verification' in complaint.classification or 'Possible' in complaint.classification %}
+              Possible Encroachment Indicator Identified
+            {% else %}
+              Preliminary Assessment Completed
+            {% endif %}
+          </h5>
+          <p class="small text-secondary mb-2">
+            Your complaint is reviewed using the information provided, location data, and predefined assessment criteria. Official verification is required by responsible officials.
+          </p>
+          <span class="badge badge-priority-{{ complaint.priority }} px-3 py-1">
+            Priority Level: {{ complaint.priority }}
+          </span>
+        </div>
+
+        <!-- Reported Site Observations Summary -->
+        <div class="mb-4">
+          <h6 class="fw-bold font-heading small text-uppercase text-secondary mb-2">
+            <i class="bi bi-list-check me-1"></i> Reported Site Observations
+          </h6>
+          <div class="list-group list-group-flush rounded-3 border bg-white small">
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <span>Construction / Landfilling Observed:</span>
+              <strong class="{% if complaint.has_construction %}text-danger{% else %}text-muted{% endif %}">
+                {{ "YES" if complaint.has_construction else "NO" }}
+              </strong>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <span>Mapped Water Body Boundary:</span>
+              <strong class="{% if complaint.inside_boundary %}text-danger{% else %}text-success{% endif %}">
+                {{ "Intersecting Buffer Zone" if complaint.inside_boundary else "Nearby Area" }}
+              </strong>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <span>Sanctioned Permit Displayed:</span>
+              <strong class="{% if complaint.has_permission %}text-success{% else %}text-danger{% endif %}">
+                {{ "YES (Permit Posted)" if complaint.has_permission else "NO (Unverified)" }}
+              </strong>
+            </div>
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <span>Encroachment Scale:</span>
+              <span class="badge bg-light text-dark border">{{ complaint.affected_area_level }} Scale</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Assigned Department / Authority Card -->
+        {% if complaint.assignments and complaint.assignments[0] %}
+          <div class="mb-4">
+            <h6 class="fw-bold font-heading small text-uppercase text-secondary mb-2">
+              <i class="bi bi-building me-1"></i> Directed Authority
+            </h6>
+            <div class="p-3 bg-light rounded-3 border">
+              <div class="fw-bold text-dark mb-1">
+                {{ complaint.assignments[0].authority.name if complaint.assignments[0].authority else "Assigned Department" }}
+              </div>
+              <div class="small text-muted mb-1">
+                Department: <strong>{{ complaint.assignments[0].authority.department if complaint.assignments[0].authority else "Revenue Department" }}</strong> &bull;
+                Jurisdiction: <strong>{{ complaint.assignments[0].authority.jurisdiction if complaint.assignments[0].authority else "Central Zone" }}</strong>
+              </div>
+              <div class="small text-secondary">
+                {{ complaint.assignments[0].assignment_reason or "Assigned based on district jurisdiction and department eligibility." }}
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Legal Disclaimer Note -->
+        <div class="alert alert-light border small text-muted mb-0 py-2" style="font-size: 0.78rem;">
+          <i class="bi bi-info-circle me-1 text-primary"></i>
+          <strong>Note:</strong> Preliminary assessments are for routing and prioritization purposes. Final legal determination is made by authorized officials following physical survey.
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const mapContainer = document.getElementById('detailMap');
+  if (!mapContainer) return;
+
+  const complaintId = parseInt(mapContainer.dataset.complaintId, 10);
+  const complaintTitle = mapContainer.dataset.complaintTitle || '';
+  const waterBodyName = mapContainer.dataset.waterbodyName || '';
+  const cLat = parseFloat("{{ complaint.latitude }}");
+  const cLng = parseFloat("{{ complaint.longitude }}");
+  
+  const map = L.map('detailMap').setView([cLat, cLng], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+
+  L.marker([cLat, cLng])
+    .addTo(map)
+    .bindPopup(`<strong>Complaint #${complaintId}</strong><br>${complaintTitle}`)
+    .openPopup();
+
+  // If water body boundary polygon JSON is available
+  const boundaryElem = document.getElementById('detail-boundary-json');
+  if (boundaryElem) {
+    try {
+      const boundaryData = JSON.parse(boundaryElem.textContent);
+      L.geoJSON(boundaryData, {
+        style: {
+          color: '#0284c7',
+          weight: 2,
+          fillColor: '#38bdf8',
+          fillOpacity: 0.25
+        }
+      }).addTo(map).bindPopup(waterBodyName);
+    } catch(e) {
+      console.warn("Could not parse boundary data", e);
+    }
+  }
+});
+</script>
+{% endblock %}

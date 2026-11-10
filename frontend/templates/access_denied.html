@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Access Denied | JalRaksha{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5 text-center">
+      <div class="jr-card p-5 border-0 shadow-lg bg-white">
+        <div class="d-inline-flex p-4 rounded-circle bg-danger bg-opacity-10 text-danger mb-4">
+          <i class="bi bi-shield-slash fs-1"></i>
+        </div>
+        <h2 class="fw-bold font-heading mb-2 text-dark">403 — Access Denied</h2>
+        <p class="text-muted mb-4">
+          You do not have the required permissions to access this page. JalRaksha enforces strict role-based access control.
+        </p>
+
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          {% if session.get('user_role') == 'citizen' %}
+            <a href="{{ url_for('web.citizen_dashboard') }}" class="btn btn-jr-primary px-4">
+              <i class="bi bi-speedometer2 me-1"></i> Go to Citizen Dashboard
+            </a>
+          {% elif session.get('user_role') in ['officer', 'authority'] %}
+            <a href="{{ url_for('web.officer_dashboard') }}" class="btn btn-jr-primary px-4">
+              <i class="bi bi-shield-check me-1"></i> Go to Officer Dashboard
+            </a>
+          {% elif session.get('user_role') == 'admin' %}
+            <a href="{{ url_for('web.admin_dashboard') }}" class="btn btn-jr-primary px-4">
+              <i class="bi bi-gear me-1"></i> Go to Admin Dashboard
+            </a>
+          {% else %}
+            <a href="{{ url_for('web.login_page') }}" class="btn btn-jr-primary px-4">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+            </a>
+          {% endif %}
+          <a href="{{ url_for('web.index') }}" class="btn btn-jr-secondary px-4">
+            <i class="bi bi-house me-1"></i> Home
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

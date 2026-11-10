@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Admin System Dashboard | JalRaksha System Governance{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-shield-lock me-1"></i> Admin Portal
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">System Monitoring & Governance</h2>
+      <p class="text-muted small mb-0">System-wide complaint tracking, user access management, officer workload, and configuration.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.admin_assignments') }}" class="btn btn-warning text-dark font-heading fw-semibold shadow-sm rounded-pill px-3">
+        <i class="bi bi-diagram-3 me-1"></i> Complaint Assignments
+      </a>
+      <a href="{{ url_for('web.admin_map') }}" class="btn btn-jr-primary shadow-sm">
+        <i class="bi bi-map-fill me-1"></i> System GIS Map
+      </a>
+    </div>
+  </div>
+
+  <!-- Unassigned Complaints Alert Banner if any -->
+  {% if stats.unassigned > 0 %}
+    <div class="alert alert-warning border-warning d-flex align-items-center justify-content-between py-3 mb-4 rounded-3 shadow-sm">
+      <div class="d-flex align-items-center gap-3">
+        <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
+        <div>
+          <strong class="text-dark d-block">Unassigned Complaints Alert</strong>
+          <span class="small text-secondary">There are <strong>{{ stats.unassigned }}</strong> complaints awaiting officer assignment.</span>
+        </div>
+      </div>
+      <a href="{{ url_for('web.admin_assignments') }}" class="btn btn-dark btn-sm rounded-pill px-3">
+        Assign Now &rarr;
+      </a>
+    </div>
+  {% endif %}
+
+  <!-- 8 System Counter Cards (Real PostgreSQL Data) -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Total Complaints</div>
+        <div class="fs-2 fw-bold text-dark font-heading">{{ stats.total_complaints }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-folder2 me-1"></i> System records</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-amber">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Unassigned Cases</div>
+        <div class="fs-2 fw-bold text-warning font-heading">{{ stats.unassigned }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-diagram-2 me-1"></i> Needs officer allocation</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-red">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">High Priority</div>
+        <div class="fs-2 fw-bold text-danger font-heading">{{ stats.high_priority }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-exclamation-octagon me-1"></i> Critical / High</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-green">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Resolved</div>
+        <div class="fs-2 fw-bold text-success font-heading">{{ stats.resolved }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-check2-all me-1"></i> Cases closed</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Registered Citizens</div>
+        <div class="fs-2 fw-bold text-primary font-heading">{{ stats.total_citizens }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-people me-1"></i> Active citizen accounts</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card stat-purple">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Field Officers</div>
+        <div class="fs-2 fw-bold text-primary font-heading">{{ stats.total_officers }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-person-badge me-1"></i> Verification officers</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Authorities</div>
+        <div class="fs-2 fw-bold text-dark font-heading">{{ stats.total_authorities }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-building me-1"></i> Municipal & Revenue</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-3">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Water Bodies</div>
+        <div class="fs-2 fw-bold text-teal font-heading" style="color: var(--jr-teal);">{{ stats.total_water_bodies }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-droplet-fill me-1"></i> Mapped lakes & canals</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent System Complaints Table -->
+  <div class="jr-card border-0 overflow-hidden shadow-sm mb-4">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold font-heading mb-0 text-dark">
+        <i class="bi bi-list-stars text-primary me-2"></i>System-Wide Complaint Monitoring
+      </h5>
+      <a href="{{ url_for('web.admin_reports') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+        Analytics & Reports
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th scope="col" class="ps-4">ID</th>
+            <th scope="col">Title & Water Body</th>
+            <th scope="col">Preliminary Result</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Assigned Authority</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if complaints %}
+            {% for c in complaints[:10] %}
+              <tr>
+                <td class="ps-4 font-monospace fw-bold text-primary">#{{ c.id }}</td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ c.title }}</div>
+                  <div class="small text-muted">
+                    <i class="bi bi-geo-alt me-1 text-danger"></i>
+                    {{ c.water_body.name if c.water_body else "Unmapped Water Body" }}
+                  </div>
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ c.classification }}</span>
+                </td>
+                <td>
+                  <span class="jr-badge badge-priority-{{ c.priority }}">{{ c.priority }}</span>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-dark">
+                    {{ c.assignments[0].authority.name if c.assignments else "Unassigned" }}
+                  </div>
+                </td>
+                <td>
+                  <span class="jr-badge badge-status-{{ c.status }}">{{ c.status }}</span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/officer/complaints/{{ c.id }}/verify" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                    View
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">No complaint records found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

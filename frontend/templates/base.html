@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}JalRaksha | Water Body Encroachment System{% endblock %}</title>
+  
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Custom Style -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block styles %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <!-- Navigation Bar -->
+  {% if request.endpoint != 'web.index' %}
+  <nav class="navbar navbar-expand-lg navbar-dark navbar-jalraksha sticky-top py-2">
+    <div class="container-fluid px-lg-4">
+      
+      <!-- Brand Logo -->
+      <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('web.index') }}" id="brandLogo">
+        <span class="p-1 rounded bg-info bg-opacity-25 text-info d-inline-flex align-items-center justify-content-center">
+          <i class="bi bi-water fs-4"></i>
+        </span>
+        <span class="fw-bold font-heading">JalRaksha</span>
+        {% if session.get('user_role') == 'admin' %}
+          <span class="badge bg-danger text-white font-heading fw-semibold ms-1" style="font-size: 0.68rem;">ADMIN PORTAL</span>
+        {% elif session.get('user_role') in ['officer', 'authority'] %}
+          <span class="badge bg-warning text-dark font-heading fw-semibold ms-1" style="font-size: 0.68rem;">OFFICER PORTAL</span>
+        {% elif session.get('user_role') == 'citizen' %}
+          <span class="badge bg-info text-dark font-heading fw-semibold ms-1" style="font-size: 0.68rem;">CITIZEN PORTAL</span>
+        {% else %}
+          <span class="badge bg-light text-dark font-heading fw-semibold ms-1" style="font-size: 0.68rem;">WATER GUARDIAN</span>
+        {% endif %}
+      </a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navContent" aria-controls="navContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navContent">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-1">
+          
+          <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'web.index' %}active{% endif %}" href="{{ url_for('web.index') }}">
+              <i class="bi bi-house me-1"></i> Home
+            </a>
+          </li>
+
+          <!-- ROLE-SPECIFIC NAVIGATION MENU -->
+
+          {% if session.get('user_id') %}
+            
+            <!-- 1. CITIZEN NAVIGATION -->
+            {% if session.get('user_role') == 'citizen' %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.citizen_dashboard' %}active{% endif %}" href="{{ url_for('web.citizen_dashboard') }}">
+                  <i class="bi bi-speedometer2 me-1"></i> My Dashboard
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.new_complaint' %}active{% endif %}" href="{{ url_for('web.new_complaint') }}">
+                  <i class="bi bi-plus-circle me-1"></i> Report an Issue
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.citizen_complaints_list' %}active{% endif %}" href="{{ url_for('web.citizen_complaints_list') }}">
+                  <i class="bi bi-journal-text me-1"></i> My Complaints
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.citizen_profile' %}active{% endif %}" href="{{ url_for('web.citizen_profile') }}">
+                  <i class="bi bi-person me-1"></i> Profile
+                </a>
+              </li>
+
+            <!-- 2. OFFICER NAVIGATION -->
+            {% elif session.get('user_role') in ['officer', 'authority'] %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.officer_dashboard' %}active{% endif %}" href="{{ url_for('web.officer_dashboard') }}">
+                  <i class="bi bi-speedometer2 me-1"></i> Officer Dashboard
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.officer_complaints' %}active{% endif %}" href="{{ url_for('web.officer_complaints') }}">
+                  <i class="bi bi-inbox-fill me-1"></i> Assigned Complaints
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.officer_map' %}active{% endif %}" href="{{ url_for('web.officer_map') }}">
+                  <i class="bi bi-map-fill me-1"></i> Route Map
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.officer_inspections' %}active{% endif %}" href="{{ url_for('web.officer_inspections') }}">
+                  <i class="bi bi-clipboard-check me-1"></i> Inspection Records
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.officer_profile' %}active{% endif %}" href="{{ url_for('web.officer_profile') }}">
+                  <i class="bi bi-person-badge me-1"></i> Profile
+                </a>
+              </li>
+
+            <!-- 3. ADMIN NAVIGATION -->
+            {% elif session.get('user_role') == 'admin' %}
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.admin_dashboard' %}active{% endif %}" href="{{ url_for('web.admin_dashboard') }}">
+                  <i class="bi bi-speedometer2 me-1"></i> Admin Dashboard
+                </a>
+              </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="adminManageDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="bi bi-gear-fill me-1"></i> Management
+                </a>
+                <ul class="dropdown-menu shadow border-0" aria-labelledby="adminManageDropdown">
+                  <li><a class="dropdown-item" href="{{ url_for('web.admin_users') }}"><i class="bi bi-people me-2 text-primary"></i> User Management</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('web.admin_officers') }}"><i class="bi bi-person-badge me-2 text-info"></i> Officer Management</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('web.admin_authorities') }}"><i class="bi bi-building me-2 text-success"></i> Authority Management</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('web.admin_water_bodies') }}"><i class="bi bi-droplet-fill me-2 text-teal"></i> Water-Body Management</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="{{ url_for('web.admin_assignments') }}"><i class="bi bi-diagram-3 me-2 text-warning"></i> Complaint Assignments</a></li>
+                </ul>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.admin_map' %}active{% endif %}" href="{{ url_for('web.admin_map') }}">
+                  <i class="bi bi-map me-1"></i> GIS Map
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.admin_reports' %}active{% endif %}" href="{{ url_for('web.admin_reports') }}">
+                  <i class="bi bi-bar-chart-line me-1"></i> Reports & Analytics
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'web.admin_ai_rules' %}active{% endif %}" href="{{ url_for('web.admin_ai_rules') }}">
+                  <i class="bi bi-cpu me-1"></i> AI Rules
+                </a>
+              </li>
+            {% endif %}
+
+          {% else %}
+            <!-- Unauthenticated Public Links -->
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('web.login_page') }}#report">
+                <i class="bi bi-plus-circle me-1"></i> Report an Issue
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{{ url_for('web.login_page') }}">
+                <i class="bi bi-search me-1"></i> Track Complaint
+              </a>
+            </li>
+          {% endif %}
+
+        </ul>
+
+        <!-- Right User Session Info -->
+        <div class="d-flex align-items-center gap-2">
+          {% if session.get('user_id') %}
+            <div class="d-flex align-items-center me-2 text-light small bg-white bg-opacity-10 px-3 py-1.5 rounded-pill border border-white border-opacity-10">
+              <i class="bi bi-person-circle me-2 text-info fs-6"></i>
+              <span class="fw-medium">{{ session.get('user_name') }}</span>
+              <span class="badge text-capitalize ms-2 {% if session.get('user_role') == 'admin' %}bg-danger{% elif session.get('user_role') in ['officer','authority'] %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}" style="font-size: 0.68rem;">
+                {{ session.get('user_role') }}
+              </span>
+            </div>
+            <a href="/api/auth/logout" id="logoutBtn" class="btn btn-outline-light btn-sm px-3 rounded-pill" onclick="event.preventDefault(); fetch('/api/auth/logout').then(() => window.location.href='/login');">
+              <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+          {% else %}
+            <a href="{{ url_for('web.login_page') }}" id="loginBtnNav" class="btn btn-outline-light btn-sm px-3 rounded-pill">
+              <i class="bi bi-box-arrow-in-right me-1"></i> Login
+            </a>
+            <a href="{{ url_for('web.register_page') }}" id="registerBtnNav" class="btn btn-info btn-sm px-3 rounded-pill text-dark fw-semibold">
+              <i class="bi bi-person-plus me-1"></i> Register
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </nav>
+  {% endif %}
+
+
+  <!-- Main Content Body -->
+  <main class="flex-grow-1">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-white py-4 mt-auto border-top border-secondary border-opacity-25" style="background-color: var(--jr-blue-dark) !important;">
+    <div class="container">
+      <div class="row g-4 align-items-center py-2">
+        <div class="col-md-6 text-center text-md-start">
+          <div class="d-flex align-items-center justify-content-center justify-content-md-start gap-2 mb-2">
+            <i class="bi bi-water text-info fs-5"></i>
+            <span class="fw-bold font-heading fs-5 text-white">JalRaksha</span>
+          </div>
+          <p class="text-light opacity-75 small mb-0">
+            AI-Based Water Body Encroachment Complaint System.<br>
+            Helping citizens report suspected encroachment and track complaints through a transparent review process.
+          </p>
+        </div>
+        <div class="col-md-6 text-center text-md-end">
+          <div class="small mb-2">
+            <a href="{{ url_for('web.index') }}" class="link-light text-decoration-none me-3 footer-link">Home</a>
+            <a href="{{ url_for('web.login_page') }}" class="link-light text-decoration-none me-3 footer-link">Sign In</a>
+            <a href="{{ url_for('web.register_page') }}" class="link-light text-decoration-none footer-link">Register</a>
+          </div>
+          <p class="small text-light opacity-75 mb-0">
+            &copy; 2026 JalRaksha. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Bootstrap 5 Bundle JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

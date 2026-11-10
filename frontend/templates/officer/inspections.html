@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Inspection Records | JalRaksha Officer Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-clipboard-check me-1"></i> Field Audit Log
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">Inspection & Action Records</h2>
+      <p class="text-muted small mb-0">Historical log of field inspections, status transitions, and executive remarks recorded by officers.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('web.officer_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="jr-card border-0 overflow-hidden shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom">
+      <h5 class="fw-bold font-heading mb-0 text-dark"><i class="bi bi-journal-check text-primary me-2"></i>Recorded Field Actions</h5>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th scope="col" class="ps-4">Audit ID</th>
+            <th scope="col">Complaint ID</th>
+            <th scope="col">Transition Status</th>
+            <th scope="col">Survey Remarks & Findings</th>
+            <th scope="col">Officer / Recorded By</th>
+            <th scope="col" class="pe-4">Recorded Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if history %}
+            {% for h in history %}
+              <tr>
+                <td class="ps-4 font-monospace fw-bold text-muted">#{{ h.id }}</td>
+                <td class="font-monospace fw-bold text-primary">
+                  <a href="/officer/complaints/{{ h.complaint_id }}/verify" class="text-decoration-none">
+                    #{{ h.complaint_id }}
+                  </a>
+                </td>
+                <td>
+                  <span class="jr-badge badge-status-{{ h.new_status }}">{{ h.new_status }}</span>
+                </td>
+                <td class="small text-dark">
+                  {{ h.remarks or "Status transition recorded." }}
+                </td>
+                <td class="small text-muted">
+                  <i class="bi bi-person me-1"></i> {{ h.author.name if h.author else "Official System" }}
+                </td>
+                <td class="small text-muted pe-4">
+                  {{ h.changed_at.strftime('%d %b %Y, %H:%M') if h.changed_at else "" }}
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="6" class="text-center py-5 text-muted">No inspection records logged yet.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Complaint #{{ complaint.id }} | Official Action Desk{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumbs & Status Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-secondary font-monospace">Grievance Investigation #{{ complaint.id }}</span>
+        <span class="jr-badge badge-priority-{{ complaint.priority }}">{{ complaint.priority }} Priority</span>
+      </div>
+      <h2 class="fw-bold font-heading mb-0 text-dark">{{ complaint.title }}</h2>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.admin_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+      <a href="{{ url_for('web.admin_map') }}" class="btn btn-outline-primary btn-sm rounded-pill">
+        <i class="bi bi-map me-1"></i> View on GIS Map
+      </a>
+    </div>
+  </div>
+
+  <div id="actionAlert" class="alert alert-success d-none py-2 small mb-3"></div>
+
+  <div class="row g-4">
+    
+    <!-- Left Column: Incident Details, Map & Official Action Form -->
+    <div class="col-lg-7">
+      
+      <!-- Incident Overview Card -->
+      <div class="jr-card p-4 mb-4 border-0 shadow-sm bg-white">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold font-heading mb-0 text-dark">
+            <i class="bi bi-clipboard-check text-primary me-2"></i>Field Survey & Reported Data
+          </h5>
+          <span class="jr-badge badge-status-{{ complaint.status }}">
+            {{ complaint.status }}
+          </span>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Water Body</span>
+            <strong class="text-dark">
+              {{ complaint.water_body.name if complaint.water_body else "Unmapped Water Body" }}
+              <span class="badge bg-info-subtle text-info-emphasis ms-1">{{ complaint.water_body.type if complaint.water_body else "N/A" }}</span>
+            </strong>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">District Jurisdiction</span>
+            <strong class="text-dark">{{ complaint.water_body.district if complaint.water_body else "Central Zone" }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Location Coordinates</span>
+            <span class="font-monospace text-dark">{{ "%.6f"|format(complaint.latitude) }}, {{ "%.6f"|format(complaint.longitude) }}</span>
+          </div>
+          <div class="col-sm-6">
+            <span class="text-muted small d-block">Assigned Department</span>
+            <span class="fw-bold text-dark">{{ complaint.assignments[0].authority.name if complaint.assignments else "Pending Allocation" }}</span>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <span class="text-muted small d-block mb-1">Citizen Complaint Statement</span>
+          <p class="p-3 bg-light rounded-3 mb-0 small text-dark border">
+            {{ complaint.description }}
+          </p>
+        </div>
+
+        <!-- Evidence Photos -->
+        {% if complaint.evidence %}
+          <div class="mb-4">
+            <span class="text-muted small d-block mb-2"><i class="bi bi-camera me-1"></i> Citizen Evidence Photo Uploads</span>
+            <div class="d-flex flex-wrap gap-2">
+              {% for ev in complaint.evidence %}
+                <div class="border rounded p-1 bg-light text-center" style="width: 120px;">
+                  {% if 'image' in ev.file_type %}
+                    <a href="/{{ ev.file_path }}" target="_blank">
+                      <img src="/{{ ev.file_path }}" alt="Evidence" class="img-fluid rounded mb-1" style="height: 70px; object-fit: cover; width: 100%;">
+                    </a>
+                  {% else %}
+                    <div class="p-3 text-secondary"><i class="bi bi-file-earmark-pdf fs-2 text-danger"></i></div>
+                  {% endif %}
+                  <div class="text-truncate small text-muted px-1" title="{{ ev.original_filename }}" style="font-size: 0.7rem;">
+                    {{ ev.original_filename or "Document" }}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Map -->
+        <div class="mt-3">
+          <span class="text-muted small d-block mb-2"><i class="bi bi-geo-alt me-1"></i> Geospatial View & Field Inspection Map</span>
+          <div id="adminVerifyMap"
+               data-complaint-id="{{ complaint.id }}"
+               data-complaint-title="{{ complaint.title }}"
+               data-waterbody-name="{{ complaint.water_body.name if complaint.water_body else '' }}"
+               class="jr-map-container"
+               style="height: 280px;"></div>
+          {% if complaint.water_body and complaint.water_body.boundary_data %}
+            <script id="boundary-json" type="application/json">
+              {{ complaint.water_body.boundary_data|safe }}
+            </script>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <!-- Official Action & Status Update Form -->
+      <div class="jr-card p-4 mb-4 border-0 shadow-sm bg-white">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-pencil-square text-success me-2"></i>Record Official Action & Update Status
+        </h5>
+        
+        <form id="statusUpdateForm">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Update Case Status</label>
+            <select id="new_status" class="form-select">
+              <option value="UNDER_VERIFICATION" {% if complaint.status == 'UNDER_VERIFICATION' %}selected{% endif %}>UNDER_VERIFICATION (Officer dispatched for physical site survey)</option>
+              <option value="ACTION_REQUIRED" {% if complaint.status == 'ACTION_REQUIRED' %}selected{% endif %}>ACTION_REQUIRED (Encroachment confirmed; eviction/demolition notice needed)</option>
+              <option value="ACTION_TAKEN" {% if complaint.status == 'ACTION_TAKEN' %}selected{% endif %}>ACTION_TAKEN (Demolition / Site restoration conducted)</option>
+              <option value="RESOLVED" {% if complaint.status == 'RESOLVED' %}selected{% endif %}>RESOLVED (Case closed & water boundary restored)</option>
+              <option value="REJECTED" {% if complaint.status == 'REJECTED' %}selected{% endif %}>REJECTED (Permitted activity / false alarm)</option>
+              <option value="DUPLICATE" {% if complaint.status == 'DUPLICATE' %}selected{% endif %}>DUPLICATE (Merged with existing case)</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Official Survey Remarks & Executive Action</label>
+            <textarea id="remarks" class="form-control" rows="3" placeholder="Enter findings of the physical survey, land revenue survey numbers, or executive actions taken..." required></textarea>
+          </div>
+
+          <button type="submit" id="updateBtn" class="btn btn-success px-4 py-2 fw-semibold rounded-pill">
+            <span id="updateSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span> Record Official Action
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Official Assessment Summary & Administrative Controls -->
+    <div class="col-lg-5">
+      
+      <!-- Automated Triage Assessment Panel -->
+      <div class="jr-card p-4 border-0 shadow-sm bg-white mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <h5 class="fw-bold font-heading mb-0 text-dark">
+            <i class="bi bi-shield-check text-primary me-2"></i>Automated Assessment
+          </h5>
+          <button type="button" class="btn btn-sm btn-outline-primary rounded-pill" id="reAnalyzeBtn" onclick="triggerReAnalysis()">
+            <i class="bi bi-arrow-repeat me-1"></i> Re-Assess
+          </button>
+        </div>
+
+        <div class="p-3 rounded-3 mb-3 text-center border {% if 'Verification' in complaint.classification or 'Possible' in complaint.classification %}bg-danger-subtle border-danger-subtle{% else %}bg-success-subtle border-success-subtle{% endif %}">
+          <div class="text-uppercase small fw-bold text-secondary mb-1">Preliminary Classification</div>
+          <h5 class="fw-bold mb-1 {% if 'Verification' in complaint.classification or 'Possible' in complaint.classification %}text-danger{% else %}text-success{% endif %}">
+            {{ complaint.classification }}
+          </h5>
+          <span class="badge badge-priority-{{ complaint.priority }} px-3 py-1">
+            Priority Level: {{ complaint.priority }}
+          </span>
+        </div>
+
+        <!-- Facts Summary -->
+        <h6 class="fw-bold font-heading small text-uppercase text-secondary mb-2">Evaluated Site Indicators</h6>
+        <div class="list-group list-group-flush rounded-3 border mb-3 small">
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Active Construction / Dumping:</span>
+            <strong class="{% if complaint.has_construction %}text-danger{% else %}text-secondary{% endif %}">
+              {{ "YES" if complaint.has_construction else "NO" }}
+            </strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Water Body Boundary Overlay:</span>
+            <strong class="{% if complaint.inside_boundary %}text-danger{% else %}text-success{% endif %}">
+              {{ "Intersecting" if complaint.inside_boundary else "External" }}
+            </strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+            <span>Official Permit Verified:</span>
+            <strong class="{% if complaint.has_permission %}text-success{% else %}text-danger{% endif %}">
+              {{ "YES" if complaint.has_permission else "NO" }}
+            </strong>
+          </div>
+        </div>
+
+        <!-- Authority Allocation Summary -->
+        <h6 class="fw-bold font-heading small text-uppercase text-secondary mb-2">Department Allocation</h6>
+        <div class="p-3 bg-light rounded-3 border small mb-3">
+          {% if complaint.ai_reasoning_trace and complaint.ai_reasoning_trace.csp_assignment %}
+            <div class="fw-bold text-dark">{{ complaint.ai_reasoning_trace.csp_assignment.assigned_authority.name }}</div>
+            <div class="text-muted small mt-1">{{ complaint.ai_reasoning_trace.csp_assignment.assignment_reason }}</div>
+          {% else %}
+            <div class="text-muted small">Authority assigned based on district jurisdiction and department eligibility.</div>
+          {% endif %}
+          <div class="mt-2 text-end">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" onclick="reRunCSP()">
+              <i class="bi bi-arrow-clockwise me-1"></i> Re-allocate Jurisdiction
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Operational Assessment Tools Panel -->
+      <div class="jr-card p-4 border-0 shadow-sm bg-white mb-4">
+        <h6 class="fw-bold font-heading text-dark mb-3">
+          <i class="bi bi-tools text-primary me-2"></i> Inspection Tools & Verification
+        </h6>
+        
+        <!-- Verification Test -->
+        <div class="border rounded-3 p-3 bg-light mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <strong class="small text-dark">1. Rule-Based Verification Check</strong>
+            <button type="button" class="btn btn-sm btn-outline-info py-1 px-3 rounded-pill" onclick="testBackwardChaining()">
+              Verify Criteria
+            </button>
+          </div>
+          <div class="small text-muted mb-2" style="font-size: 0.78rem;">
+            Checks if complaint satisfies official field verification requirements.
+          </div>
+          <div id="bcResult" class="code-block d-none small py-2 px-3" style="font-size: 0.75rem;"></div>
+        </div>
+
+        <!-- Inspection Route Calculation -->
+        <div class="border rounded-3 p-3 bg-light">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <strong class="small text-dark">2. Optimal Inspection Route</strong>
+            <button type="button" class="btn btn-sm btn-outline-success py-1 px-3 rounded-pill" onclick="planAStarRoute()">
+              Plot Inspection Route
+            </button>
+          </div>
+          <div class="small text-muted mb-2" style="font-size: 0.78rem;">
+            Calculates optimal survey route from zonal office to incident coordinates.
+          </div>
+          <div id="astarResult" class="code-block d-none small py-2 px-3" style="font-size: 0.75rem;"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let adminMap, routeLayer;
+const complaintId = parseInt("{{ complaint.id }}", 10);
+
+document.addEventListener('DOMContentLoaded', function() {
+  const mapContainer = document.getElementById('adminVerifyMap');
+  const complaintTitle = mapContainer.dataset.complaintTitle || '';
+  const waterBodyName = mapContainer.dataset.waterbodyName || '';
+  const cLat = parseFloat("{{ complaint.latitude }}");
+  const cLng = parseFloat("{{ complaint.longitude }}");
+
+  adminMap = L.map('adminVerifyMap').setView([cLat, cLng], 14);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap'
+  }).addTo(adminMap);
+
+  L.marker([cLat, cLng])
+    .addTo(adminMap)
+    .bindPopup(`<strong>Incident #${complaintId}</strong><br>${complaintTitle}`)
+    .openPopup();
+
+  const boundaryElem = document.getElementById('boundary-json');
+  if (boundaryElem) {
+    try {
+      const boundaryData = JSON.parse(boundaryElem.textContent);
+      L.geoJSON(boundaryData, {
+        style: { color: '#0284c7', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.25 }
+      }).addTo(adminMap).bindPopup(waterBodyName);
+    } catch(e) {}
+  }
+});
+
+// Update status form handler
+document.getElementById('statusUpdateForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const alertBox = document.getElementById('actionAlert');
+  const spinner = document.getElementById('updateSpinner');
+  const btn = document.getElementById('updateBtn');
+
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/complaints/${complaintId}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: document.getElementById('new_status').value,
+        remarks: document.getElementById('remarks').value
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alertBox.textContent = data.message;
+      alertBox.classList.remove('d-none');
+      setTimeout(() => window.location.reload(), 1200);
+    } else {
+      alert('Error updating status: ' + data.message);
+    }
+  } catch (err) {
+    alert('Server error: ' + err.message);
+  } finally {
+    spinner.classList.add('d-none');
+    btn.disabled = false;
+  }
+});
+
+// Re-analyze assessment
+async function triggerReAnalysis() {
+  const btn = document.getElementById('reAnalyzeBtn');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`/api/complaints/${complaintId}/analyze`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      alert("Assessment re-executed successfully! Reloading page...");
+      window.location.reload();
+    }
+  } catch(err) {
+    alert("Error: " + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Re-run authority allocation
+async function reRunCSP() {
+  try {
+    const res = await fetch(`/api/complaints/${complaintId}/assign`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      alert("Authority allocation updated! Assigned: " + data.assigned_authority.name);
+      window.location.reload();
+    } else {
+      alert("Allocation Error: " + data.message);
+    }
+  } catch(err) {
+    alert("Error: " + err.message);
+  }
+}
+
+// Test Verification
+async function testBackwardChaining() {
+  const box = document.getElementById('bcResult');
+  box.classList.remove('d-none');
+  box.textContent = "Verifying criteria...";
+
+  try {
+    const res = await fetch(`/api/complaints/${complaintId}/verify-backward`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: "REQUIRES_OFFICIAL_VERIFICATION" })
+    });
+    const data = await res.json();
+    box.textContent = JSON.stringify(data.proof, null, 2);
+  } catch(err) {
+    box.textContent = "Error: " + err.message;
+  }
+}
+
+// Inspection Route Planner
+async function planAStarRoute() {
+  const box = document.getElementById('astarResult');
+  box.classList.remove('d-none');
+  box.textContent = "Calculating optimal path...";
+
+  try {
+    const res = await fetch(`/api/complaints/${complaintId}/inspection-route`);
+    const data = await res.json();
+    if (data.success && data.route_plan) {
+      const plan = data.route_plan;
+      box.textContent = `Route Distance: ${plan.total_distance_km} km (~${plan.estimated_travel_time_min} mins)\nWaypoints: ${plan.waypoints.length} nodes`;
+
+      // Plot route line on map
+      if (routeLayer) adminMap.removeLayer(routeLayer);
+      const latlngs = plan.waypoints.map(p => [p.lat, p.lng]);
+      routeLayer = L.polyline(latlngs, { color: '#ef4444', weight: 4, dashArray: '6, 6' }).addTo(adminMap);
+      
+      // Start office marker
+      L.marker([plan.start.lat, plan.start.lng], {
+        icon: L.divIcon({ className: 'badge bg-dark text-white p-1', html: 'Office HQ' })
+      }).addTo(adminMap);
+
+      adminMap.fitBounds(routeLayer.getBounds(), { padding: [30, 30] });
+    }
+  } catch(err) {
+    box.textContent = "Error: " + err.message;
+  }
+}
+</script>
+{% endblock %}

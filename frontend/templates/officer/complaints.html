@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block title %}Assigned Complaints Queue | JalRaksha Officer Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-inbox-fill me-1"></i> Officer Queue
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">Assigned Complaints Queue</h2>
+      <p class="text-muted small mb-0">Filter and manage water body encroachment grievances assigned to your department.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.officer_map') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-map me-1"></i> Inspection Map
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter & Table Card -->
+  <div class="jr-card border-0 overflow-hidden shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom">
+      <div class="row g-2 align-items-center">
+        <!-- Search -->
+        <div class="col-md-3">
+          <input type="text" id="queueSearch" class="form-control form-control-sm" placeholder="Search ID or title...">
+        </div>
+        <!-- Status Filter -->
+        <div class="col-md-2">
+          <select id="statusFilter" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="SUBMITTED">SUBMITTED</option>
+            <option value="AI_REVIEWED">AI_REVIEWED</option>
+            <option value="ASSIGNED">ASSIGNED</option>
+            <option value="UNDER_VERIFICATION">UNDER_VERIFICATION</option>
+            <option value="ACTION_REQUIRED">ACTION_REQUIRED</option>
+            <option value="RESOLVED">RESOLVED</option>
+          </select>
+        </div>
+        <!-- Priority Filter -->
+        <div class="col-md-2">
+          <select id="priorityFilter" class="form-select form-select-sm">
+            <option value="">All Priorities</option>
+            <option value="CRITICAL">CRITICAL</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="LOW">LOW</option>
+          </select>
+        </div>
+        <!-- Water Body Filter -->
+        <div class="col-md-3">
+          <select id="waterBodyFilter" class="form-select form-select-sm">
+            <option value="">All Water Bodies</option>
+            {% for wb in water_bodies %}
+              <option value="{{ wb.id }}">{{ wb.name }} ({{ wb.district }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 text-end">
+          <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="resetFilters()">Reset Filters</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="officerQueueTable">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th scope="col" class="ps-4">ID</th>
+            <th scope="col">Title & Water Body</th>
+            <th scope="col">Location</th>
+            <th scope="col">Preliminary Result</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if complaints %}
+            {% for c in complaints %}
+              <tr class="queue-row" data-status="{{ c.status }}" data-priority="{{ c.priority }}" data-wb="{{ c.water_body_id }}">
+                <td class="ps-4 font-monospace fw-bold text-primary">#{{ c.id }}</td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ c.title }}</div>
+                  <div class="small text-muted">
+                    <i class="bi bi-geo-alt me-1 text-danger"></i>
+                    {{ c.water_body.name if c.water_body else "Unmapped Water Body" }}
+                  </div>
+                </td>
+                <td class="small font-monospace text-muted">
+                  {{ "%.4f"|format(c.latitude) }}, {{ "%.4f"|format(c.longitude) }}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ c.classification }}</span>
+                </td>
+                <td>
+                  <span class="jr-badge badge-priority-{{ c.priority }}">{{ c.priority }}</span>
+                </td>
+                <td>
+                  <span class="jr-badge badge-status-{{ c.status }}">{{ c.status }}</span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/officer/complaints/{{ c.id }}/verify" class="btn btn-sm btn-jr-primary py-1 px-3">
+                    <i class="bi bi-shield-check me-1"></i> Review Complaint
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">No complaints found.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const searchInput = document.getElementById('queueSearch');
+  const statusSelect = document.getElementById('statusFilter');
+  const prioritySelect = document.getElementById('priorityFilter');
+  const wbSelect = document.getElementById('waterBodyFilter');
+  const rows = document.querySelectorAll('.queue-row');
+
+  function filterQueue() {
+    const query = searchInput.value.trim().toLowerCase();
+    const status = statusSelect.value.toUpperCase();
+    const priority = prioritySelect.value.toUpperCase();
+    const wb = wbSelect.value;
+
+    rows.forEach(r => {
+      const rStatus = (r.getAttribute('data-status') || '').toUpperCase();
+      const rPriority = (r.getAttribute('data-priority') || '').toUpperCase();
+      const rWb = r.getAttribute('data-wb') || '';
+      const text = r.textContent.toLowerCase();
+
+      const mQuery = !query || text.includes(query);
+      const mStatus = !status || rStatus === status;
+      const mPriority = !priority || rPriority === priority;
+      const mWb = !wb || rWb === wb;
+
+      if (mQuery && mStatus && mPriority && mWb) {
+        r.style.display = '';
+      } else {
+        r.style.display = 'none';
+      }
+    });
+  }
+
+  if (searchInput) searchInput.addEventListener('input', filterQueue);
+  if (statusSelect) statusSelect.addEventListener('change', filterQueue);
+  if (prioritySelect) prioritySelect.addEventListener('change', filterQueue);
+  if (wbSelect) wbSelect.addEventListener('change', filterQueue);
+});
+
+function resetFilters() {
+  document.getElementById('queueSearch').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('priorityFilter').value = '';
+  document.getElementById('waterBodyFilter').value = '';
+  document.querySelectorAll('.queue-row').forEach(r => r.style.display = '');
+}
+</script>
+{% endblock %}

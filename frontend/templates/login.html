@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Login | JalRaksha Water Body Protection System{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+      <div class="jr-card border-0 shadow-lg p-4 bg-white">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex p-3 rounded-circle bg-primary-subtle text-primary mb-2">
+            <i class="bi bi-shield-lock fs-2"></i>
+          </div>
+          <h3 class="fw-bold font-heading">Sign In</h3>
+          <p class="text-muted small">Access Citizen Portal, Officer Action Desk, or Admin Portal</p>
+        </div>
+
+        <div id="loginError" class="alert alert-danger d-none py-2 small mb-3"></div>
+
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Email Address</label>
+            <input type="email" id="email" class="form-control" placeholder="name@example.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Password</label>
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required>
+          </div>
+          <button type="submit" id="loginBtn" class="btn btn-jr-primary w-100 py-2.5 fw-semibold shadow-sm">
+            <span id="loginSpinner" class="spinner-border spinner-border-sm me-1 d-none"></span> Sign In
+          </button>
+        </form>
+
+        <!-- Demo Quick Logins -->
+        <div class="mt-4 pt-3 border-top text-center">
+          <p class="small text-muted mb-2 fw-semibold">Demo Role Logins (1-Click):</p>
+          <div class="d-flex flex-wrap gap-2 justify-content-center">
+            <button type="button" class="btn btn-outline-primary btn-sm rounded-pill" onclick="quickFill('citizen1@example.com', 'Password@123')">
+              <i class="bi bi-person me-1"></i> Citizen
+            </button>
+            <button type="button" class="btn btn-outline-info text-dark btn-sm rounded-pill" onclick="quickFill('officer.revenue@waterbodies.gov.in', 'Password@123')">
+              <i class="bi bi-shield-check me-1"></i> Officer
+            </button>
+            <button type="button" class="btn btn-outline-dark btn-sm rounded-pill" onclick="quickFill('admin@waterbodies.gov.in', 'Password@123')">
+              <i class="bi bi-gear me-1"></i> Admin
+            </button>
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <span class="small text-muted">Don't have an account? </span>
+          <a href="{{ url_for('web.register_page') }}" class="small fw-semibold text-decoration-none">Register as Citizen</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function quickFill(email, pwd) {
+  document.getElementById('email').value = email;
+  document.getElementById('password').value = pwd;
+}
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const errorBox = document.getElementById('loginError');
+  const spinner = document.getElementById('loginSpinner');
+  const btn = document.getElementById('loginBtn');
+  
+  errorBox.classList.add('d-none');
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        const role = (data.user.role || '').toLowerCase();
+        if (role === 'citizen') {
+          window.location.href = '/citizen/dashboard';
+        } else if (role === 'authority' || role === 'officer') {
+          window.location.href = '/officer/dashboard';
+        } else if (role === 'admin') {
+          window.location.href = '/admin/dashboard';
+        } else {
+          window.location.href = '/';
+        }
+      }
+    } else {
+      errorBox.textContent = data.message || 'Login failed. Please check your credentials.';
+      errorBox.classList.remove('d-none');
+    }
+  } catch (err) {
+    errorBox.textContent = 'Server connection error: ' + err.message;
+    errorBox.classList.remove('d-none');
+  } finally {
+    spinner.classList.add('d-none');
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}

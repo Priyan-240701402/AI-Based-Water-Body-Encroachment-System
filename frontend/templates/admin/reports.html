@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}System Reports & Analytics | JalRaksha Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <span class="badge bg-danger text-white px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-bar-chart-line-fill me-1"></i> Executive Intelligence
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">System Reports & Analytics</h2>
+      <p class="text-muted small mb-0">Aggregate breakdown of grievances by status, priority distribution, district zones, and water body types.</p>
+    </div>
+    <div>
+      <a href="{{ url_for('web.admin_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Status Distribution -->
+    <div class="col-md-4">
+      <div class="jr-card p-4 border-0 shadow-sm bg-white h-100">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-pie-chart text-primary me-2"></i>Status Distribution
+        </h5>
+        <div class="list-group list-group-flush small">
+          {% set status_counts = {} %}
+          {% for c in complaints %}
+            {% set _ = status_counts.update({c.status: (status_counts.get(c.status, 0) + 1)}) %}
+          {% endfor %}
+          {% for st, count in status_counts.items() %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+              <span class="jr-badge badge-status-{{ st }}">{{ st }}</span>
+              <strong class="font-monospace text-dark fs-6">{{ count }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Priority Breakdown -->
+    <div class="col-md-4">
+      <div class="jr-card p-4 border-0 shadow-sm bg-white h-100">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-exclamation-triangle text-danger me-2"></i>Priority Breakdown
+        </h5>
+        <div class="list-group list-group-flush small">
+          {% set prio_counts = {} %}
+          {% for c in complaints %}
+            {% set _ = prio_counts.update({c.priority: (prio_counts.get(c.priority, 0) + 1)}) %}
+          {% endfor %}
+          {% for pr, count in prio_counts.items() %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+              <span class="jr-badge badge-priority-{{ pr }}">{{ pr }} Priority</span>
+              <strong class="font-monospace text-dark fs-6">{{ count }}</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- District Breakdown -->
+    <div class="col-md-4">
+      <div class="jr-card p-4 border-0 shadow-sm bg-white h-100">
+        <h5 class="fw-bold font-heading mb-3 border-bottom pb-2 text-dark">
+          <i class="bi bi-geo-alt text-teal me-2" style="color: var(--jr-teal);"></i>District Zone Distribution
+        </h5>
+        <div class="list-group list-group-flush small">
+          {% set dist_counts = {} %}
+          {% for c in complaints %}
+            {% set dist = c.water_body.district if c.water_body else "Central Zone" %}
+            {% set _ = dist_counts.update({dist: (dist_counts.get(dist, 0) + 1)}) %}
+          {% endfor %}
+          {% for dist, count in dist_counts.items() %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-0">
+              <span class="fw-semibold text-dark">{{ dist }}</span>
+              <strong class="font-monospace text-primary fs-6">{{ count }} cases</strong>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

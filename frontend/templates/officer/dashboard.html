@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Officer Dashboard | JalRaksha Official Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+      <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-shield-check me-1"></i> Officer Action Desk
+      </span>
+      <h2 class="fw-bold font-heading mb-0 text-dark">Officer Field Dashboard</h2>
+      <p class="text-muted small mb-0">Review assigned encroachment reports, perform physical site verification, and log official action.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.officer_map') }}" class="btn btn-jr-primary shadow-sm">
+        <i class="bi bi-map-fill me-1"></i> Open Route Map
+      </a>
+    </div>
+  </div>
+
+  <!-- Metric Counters (PostgreSQL Real Data) -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-2.4 col-md-4">
+      <div class="jr-stat-card">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Total Assigned</div>
+        <div class="fs-2 fw-bold text-dark font-heading">{{ stats.total }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-folder-check me-1"></i> In scope</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2.4 col-md-4">
+      <div class="jr-stat-card stat-amber">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Pending Verification</div>
+        <div class="fs-2 fw-bold text-warning font-heading">{{ stats.under_verification }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-clock-history me-1"></i> Site survey needed</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2.4 col-md-4">
+      <div class="jr-stat-card stat-red">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">High Priority</div>
+        <div class="fs-2 fw-bold text-danger font-heading">{{ stats.high_priority }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-exclamation-triangle me-1"></i> Urgent inspection</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2.4 col-md-6">
+      <div class="jr-stat-card stat-purple">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Action Required</div>
+        <div class="fs-2 fw-bold text-primary font-heading">{{ stats.action_required }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-cone-striped me-1"></i> Eviction / Demolition</div>
+      </div>
+    </div>
+    <div class="col-6 col-lg-2.4 col-md-6">
+      <div class="jr-stat-card stat-green">
+        <div class="text-muted small text-uppercase fw-semibold mb-1">Resolved</div>
+        <div class="fs-2 fw-bold text-success font-heading">{{ stats.resolved }}</div>
+        <div class="small text-muted mt-1"><i class="bi bi-check2-circle me-1"></i> Water boundary restored</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assigned Complaints Queue Table -->
+  <div class="jr-card border-0 overflow-hidden shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold font-heading mb-0 text-dark">
+        <i class="bi bi-list-task text-primary me-2"></i>Assigned Complaints Queue
+      </h5>
+      <a href="{{ url_for('web.officer_complaints') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+        View All Queue
+      </a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light small text-uppercase text-muted">
+          <tr>
+            <th scope="col" class="ps-4">ID</th>
+            <th scope="col">Title & Water Body</th>
+            <th scope="col">Location</th>
+            <th scope="col">Preliminary Result</th>
+            <th scope="col">Priority</th>
+            <th scope="col">Status</th>
+            <th scope="col" class="text-end pe-4">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if complaints %}
+            {% for c in complaints[:10] %}
+              <tr>
+                <td class="ps-4 font-monospace fw-bold text-primary">#{{ c.id }}</td>
+                <td>
+                  <div class="fw-semibold text-dark">{{ c.title }}</div>
+                  <div class="small text-muted">
+                    <i class="bi bi-droplet-fill text-info me-1"></i>
+                    {{ c.water_body.name if c.water_body else "Unmapped Water Body" }}
+                  </div>
+                </td>
+                <td class="small font-monospace text-muted">
+                  {{ "%.4f"|format(c.latitude) }}, {{ "%.4f"|format(c.longitude) }}
+                </td>
+                <td>
+                  <span class="badge bg-light text-dark border">{{ c.classification }}</span>
+                </td>
+                <td>
+                  <span class="jr-badge badge-priority-{{ c.priority }}">{{ c.priority }}</span>
+                </td>
+                <td>
+                  <span class="jr-badge badge-status-{{ c.status }}">{{ c.status }}</span>
+                </td>
+                <td class="text-end pe-4">
+                  <a href="/officer/complaints/{{ c.id }}/verify" class="btn btn-sm btn-jr-primary py-1 px-3">
+                    <i class="bi bi-shield-check me-1"></i> Review Complaint
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-5 text-muted">No assigned complaints in queue.</td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

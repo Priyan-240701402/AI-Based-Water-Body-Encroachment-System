@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Officer Inspection Route Map | JalRaksha{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-4">
+  
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <span class="badge bg-warning text-dark px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-map-fill me-1"></i> Officer Map Workspace
+      </span>
+      <h3 class="fw-bold font-heading mb-0 text-dark">Inspection Route Map</h3>
+      <p class="text-muted small mb-0">Interactive spatial view of assigned complaint locations, water body buffer zones, and target coordinates.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.officer_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+      <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="reloadOfficerMap()">
+        <i class="bi bi-arrow-repeat me-1"></i> Refresh Map Data
+      </button>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="jr-card border-0 p-3 mb-3 bg-white">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 small">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <span class="fw-semibold text-secondary">Legend:</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge" style="background-color: rgba(56, 189, 248, 0.4); border: 1px solid #0284c7;">&nbsp;&nbsp;&nbsp;</span> Water Body Polygon</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-danger rounded-circle p-1">&bull;</span> High Priority Complaint</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-warning text-dark rounded-circle p-1">&bull;</span> Medium Priority</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-success rounded-circle p-1">&bull;</span> Resolved Grievance</span>
+      </div>
+      <div class="text-muted" id="mapStatusText">Loading map layers...</div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div class="jr-card border-0 p-0 overflow-hidden shadow-sm mb-4">
+    <div id="officerGisMap" style="height: 680px; width: 100%; border-radius: var(--jr-radius-lg);"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let officerMap, wbLayers, compMarkers;
+
+document.addEventListener('DOMContentLoaded', function() {
+  initOfficerMap();
+});
+
+function initOfficerMap() {
+  officerMap = L.map('officerGisMap').setView([12.9716, 77.5946], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(officerMap);
+
+  wbLayers = L.layerGroup().addTo(officerMap);
+  compMarkers = L.layerGroup().addTo(officerMap);
+
+  reloadOfficerMap();
+}
+
+async function reloadOfficerMap() {
+  const statusText = document.getElementById('mapStatusText');
+  statusText.textContent = "Fetching spatial data...";
+
+  wbLayers.clearLayers();
+  compMarkers.clearLayers();
+
+  try {
+    const wbRes = await fetch('/api/water-bodies');
+    const wbData = await wbRes.json();
+    if (wbData.success && wbData.water_bodies) {
+      wbData.water_bodies.forEach(wb => {
+        if (wb.boundary_data) {
+          try {
+            const geojson = JSON.parse(wb.boundary_data);
+            const polygon = L.geoJSON(geojson, {
+              style: { color: wb.type === 'CANAL' ? '#0284c7' : '#0891b2', weight: 2, fillColor: '#38bdf8', fillOpacity: 0.3 }
+            }).bindPopup(`<strong>${wb.name}</strong><br>Type: ${wb.type}<br>District: ${wb.district}`);
+            wbLayers.addLayer(polygon);
+          } catch(e) {}
+        }
+      });
+    }
+
+    const compRes = await fetch('/api/officer/map');
+    const compData = await compRes.json();
+    if (compData.success && compData.complaints) {
+      compData.complaints.forEach(c => {
+        const markerColor = c.status === 'RESOLVED' ? '#10b981' : 
+                            (c.priority === 'HIGH' || c.priority === 'CRITICAL' ? '#ef4444' : '#f59e0b');
+
+        const circle = L.circleMarker([c.latitude, c.longitude], {
+          radius: 9, fillColor: markerColor, color: '#ffffff', weight: 2, opacity: 1, fillOpacity: 0.9
+        }).bindPopup(`
+          <div class="p-1" style="min-width: 200px;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-secondary font-monospace">#${c.id}</span>
+              <span class="jr-badge badge-priority-${c.priority}">${c.priority}</span>
+            </div>
+            <strong class="d-block mb-1 text-dark">${c.title}</strong>
+            <div class="small text-muted mb-2">Status: <span class="badge bg-light text-dark border">${c.status}</span></div>
+            <a href="/officer/complaints/${c.id}/verify" class="btn btn-sm btn-jr-primary w-100 py-1 small">
+              Review & Action
+            </a>
+          </div>
+        `);
+        compMarkers.addLayer(circle);
+      });
+    }
+
+    statusText.textContent = `Loaded ${wbData.count || 0} water bodies and ${compData.count || 0} complaint targets.`;
+  } catch(err) {
+    statusText.textContent = "Error loading GIS map: " + err.message;
+  }
+}
+</script>
+{% endblock %}

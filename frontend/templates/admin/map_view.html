@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}GIS Water Body & Complaint Map | JalRaksha{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-4">
+  
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+      <span class="badge bg-primary-subtle text-primary px-3 py-1.5 rounded-pill fw-semibold mb-1">
+        <i class="bi bi-geo-alt me-1"></i> Spatial Monitoring Workspace
+      </span>
+      <h3 class="fw-bold font-heading mb-0 text-dark">GIS Water Body & Encroachment Map</h3>
+      <p class="text-muted small mb-0">Interactive spatial visualization of protected water bodies, boundary polygons, and reported grievances.</p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('web.admin_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i> Dashboard
+      </a>
+      <button class="btn btn-outline-primary btn-sm rounded-pill" onclick="reloadMapData()">
+        <i class="bi bi-arrow-repeat me-1"></i> Refresh GIS Layers
+      </button>
+    </div>
+  </div>
+
+  <!-- Map Legend -->
+  <div class="jr-card border-0 p-3 mb-3 bg-white">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 small">
+      <div class="d-flex flex-wrap align-items-center gap-3">
+        <span class="fw-semibold text-secondary">Layers:</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge" style="background-color: rgba(56, 189, 248, 0.4); border: 1px solid #0284c7;">&nbsp;&nbsp;&nbsp;</span> Water Body Polygon</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-danger rounded-circle p-1">&bull;</span> High Priority Complaint</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-warning text-dark rounded-circle p-1">&bull;</span> Medium Priority</span>
+        <span class="d-inline-flex align-items-center gap-1"><span class="badge bg-success rounded-circle p-1">&bull;</span> Resolved Grievance</span>
+      </div>
+      <div class="text-muted" id="mapStatusText">
+        Loading GIS layers...
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div class="jr-card border-0 p-0 overflow-hidden shadow-sm mb-4">
+    <div id="fullGisMap" style="height: 680px; width: 100%; border-radius: var(--jr-radius-lg);"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let gisMap, waterBodyLayers, complaintMarkers;
+
+document.addEventListener('DOMContentLoaded', function() {
+  initGisMap();
+});
+
+function initGisMap() {
+  gisMap = L.map('fullGisMap').setView([12.9716, 77.5946], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(gisMap);
+
+  waterBodyLayers = L.layerGroup().addTo(gisMap);
+  complaintMarkers = L.layerGroup().addTo(gisMap);
+
+  reloadMapData();
+}
+
+async function reloadMapData() {
+  const statusText = document.getElementById('mapStatusText');
+  statusText.textContent = "Fetching spatial data...";
+
+  waterBodyLayers.clearLayers();
+  complaintMarkers.clearLayers();
+
+  try {
+    // 1. Fetch Water Bodies
+    const wbRes = await fetch('/api/water-bodies');
+    const wbData = await wbRes.json();
+    if (wbData.success && wbData.water_bodies) {
+      wbData.water_bodies.forEach(wb => {
+        if (wb.boundary_data) {
+          try {
+            const geojson = JSON.parse(wb.boundary_data);
+            const polygon = L.geoJSON(geojson, {
+              style: {
+                color: wb.type === 'CANAL' ? '#0284c7' : '#0891b2',
+                weight: 3,
+                fillColor: '#38bdf8',
+                fillOpacity: 0.35
+              }
+            }).bindPopup(`
+              <div class="p-1">
+                <h6 class="fw-bold mb-1 text-primary font-heading">${wb.name}</h6>
+                <div class="small text-muted mb-1">Type: <strong>${wb.type}</strong></div>
+                <div class="small text-muted mb-1">Zone: <strong>${wb.district}</strong></div>
+                <span class="badge bg-info-subtle text-info-emphasis">${wb.status}</span>
+              </div>
+            `);
+            waterBodyLayers.addLayer(polygon);
+          } catch(e) {}
+        }
+      });
+    }
+
+    // 2. Fetch Complaints
+    const compRes = await fetch('/api/complaints');
+    const compData = await compRes.json();
+    if (compData.success && compData.complaints) {
+      compData.complaints.forEach(c => {
+        const markerColor = c.status === 'RESOLVED' ? '#10b981' : 
+                            (c.priority === 'HIGH' || c.priority === 'CRITICAL' ? '#ef4444' : '#f59e0b');
+
+        const circleMarker = L.circleMarker([c.latitude, c.longitude], {
+          radius: 9,
+          fillColor: markerColor,
+          color: '#ffffff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.9
+        }).bindPopup(`
+          <div class="p-1" style="min-width: 200px;">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="badge bg-secondary font-monospace">#${c.id}</span>
+              <span class="jr-badge badge-priority-${c.priority}">${c.priority}</span>
+            </div>
+            <strong class="d-block mb-1 text-dark">${c.title}</strong>
+            <div class="small text-muted mb-1">
+              Result: <span class="badge bg-light text-dark border">${c.classification}</span>
+            </div>
+            <div class="small text-muted mb-2">
+              Status: <span class="badge bg-light text-dark border">${c.status}</span>
+            </div>
+            <a href="/admin/complaints/${c.id}" class="btn btn-sm btn-jr-primary w-100 py-1 small">
+              Investigate & Action
+            </a>
+          </div>
+        `);
+        complaintMarkers.addLayer(circleMarker);
+      });
+    }
+
+    statusText.textContent = `Loaded ${wbData.count || 0} water bodies and ${compData.count || 0} complaint markers.`;
+  } catch(err) {
+    statusText.textContent = "Error loading GIS layers: " + err.message;
+  }
+}
+</script>
+{% endblock %}

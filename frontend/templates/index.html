@@ -1,0 +1,923 @@
+{% extends "base.html" %}
+
+{% block title %}JalRaksha | AI-Based Water Body Encroachment System{% endblock %}
+
+{% block styles %}
+<style>
+/* =====================================================
+   HOMEPAGE-SPECIFIC STYLES
+   ===================================================== */
+
+/* ---------- SITE HEADER (homepage only) ---------- */
+.site-header {
+  background: #102A43;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  box-shadow: 0 2px 12px rgba(16,42,67,0.18);
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+}
+
+.site-header .brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+}
+
+.site-header .brand-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(22, 199, 232, 0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #16C7E8;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.site-header .brand-name {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.site-header .nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.site-header .nav-links a,
+.site-header .nav-links button {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #cbd5e1;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.18s, background 0.18s;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.site-header .nav-links a:hover,
+.site-header .nav-links button:hover {
+  color: #ffffff;
+  background: rgba(255,255,255,0.09);
+}
+
+.site-header .nav-links a.active {
+  color: #16C7E8;
+  background: rgba(22,199,232,0.12);
+}
+
+.site-header .nav-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.site-header .btn-header-primary {
+  background: #16C7E8;
+  color: #102A43;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  border: none;
+  text-decoration: none;
+  transition: background 0.18s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.site-header .btn-header-primary:hover {
+  background: #0db0cc;
+  color: #102A43;
+  transform: translateY(-1px);
+}
+
+.site-header .btn-header-outline {
+  background: transparent;
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.38rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.25);
+  text-decoration: none;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.site-header .btn-header-outline:hover {
+  border-color: rgba(255,255,255,0.55);
+  color: #ffffff;
+}
+
+/* Mobile hamburger */
+.site-header .hamburger-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #e2e8f0;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+
+/* User badge */
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 20px;
+  padding: 0.3rem 0.75rem 0.3rem 0.5rem;
+  font-size: 0.82rem;
+  color: #e2e8f0;
+}
+
+/* ---------- HERO SECTION ---------- */
+.homepage-hero {
+  background: linear-gradient(140deg, #102A43 0%, #1769AA 55%, #138A63 100%);
+  padding: 4rem 0 3.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.homepage-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -80px;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: rgba(22, 199, 232, 0.06);
+  pointer-events: none;
+}
+
+.homepage-hero::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; left: -60px;
+  width: 340px; height: 340px;
+  border-radius: 50%;
+  background: rgba(19, 138, 99, 0.07);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(22,199,232,0.15);
+  border: 1px solid rgba(22,199,232,0.3);
+  color: #7dd3fc;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  margin-bottom: 1.2rem;
+  letter-spacing: 0.02em;
+}
+
+.hero-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #ffffff;
+  letter-spacing: -0.025em;
+  margin-bottom: 1.1rem;
+}
+
+.hero-title .accent {
+  color: #16C7E8;
+}
+
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.78);
+  line-height: 1.65;
+  max-width: 540px;
+  margin-bottom: 2rem;
+}
+
+.hero-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.btn-hero-primary {
+  background: #16C7E8;
+  color: #102A43;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 8px;
+  border: none;
+  text-decoration: none;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(22,199,232,0.35);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-hero-primary:hover {
+  background: #0db0cc;
+  color: #102A43;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22,199,232,0.45);
+}
+
+.btn-hero-secondary {
+  background: rgba(255,255,255,0.1);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  padding: 0.73rem 1.65rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  text-decoration: none;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.btn-hero-secondary:hover {
+  background: rgba(255,255,255,0.2);
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-1px);
+}
+
+/* ---------- COMPLAINT PREVIEW CARD ---------- */
+.preview-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 40px rgba(16,42,67,0.18), 0 2px 8px rgba(16,42,67,0.06);
+  overflow: hidden;
+  max-width: 400px;
+  width: 100%;
+}
+
+.preview-card-header {
+  background: #F4F8FC;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0.85rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-card-title {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #172B3A;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.preview-card-body {
+  padding: 1.25rem;
+}
+
+.preview-field {
+  margin-bottom: 0.85rem;
+}
+
+.preview-field:last-child {
+  margin-bottom: 0;
+}
+
+.preview-label {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.2rem;
+  display: block;
+}
+
+.preview-value {
+  font-size: 0.9rem;
+  color: #172B3A;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.preview-value.muted {
+  color: #64748B;
+  font-weight: 400;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.preview-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 0.85rem 0;
+}
+
+.preview-footer {
+  padding: 0.9rem 1.25rem;
+  background: #F4F8FC;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.preview-example-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748B;
+  background: #e2e8f0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 10px;
+  letter-spacing: 0.04em;
+}
+
+/* ---------- HOW IT WORKS SECTION ---------- */
+.how-it-works {
+  background: #ffffff;
+  padding: 4.5rem 0;
+  border-top: 1px solid #e8f0f7;
+}
+
+.section-badge {
+  display: inline-block;
+  background: #EFF6FF;
+  color: #1769AA;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0.85rem;
+  border-radius: 20px;
+  margin-bottom: 0.85rem;
+}
+
+.section-heading {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.5rem, 3vw, 1.9rem);
+  font-weight: 800;
+  color: #172B3A;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+}
+
+.section-subheading {
+  font-size: 1rem;
+  color: #64748B;
+  max-width: 560px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.step-card {
+  background: #ffffff;
+  border: 1px solid #e8f0f7;
+  border-radius: 12px;
+  padding: 2rem 1.75rem;
+  height: 100%;
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+}
+
+.step-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(16,42,67,0.10);
+}
+
+.step-icon-wrap {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.step-icon-blue  { background: #EFF6FF; color: #1769AA; }
+.step-icon-teal  { background: #F0FDF9; color: #138A63; }
+.step-icon-cyan  { background: #F0FBFF; color: #0e7490; }
+
+.step-number {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.35rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  font-family: 'Outfit', sans-serif;
+  color: #f1f5f9;
+  line-height: 1;
+  user-select: none;
+}
+
+.step-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #172B3A;
+  margin-bottom: 0.5rem;
+}
+
+.step-desc {
+  font-size: 0.92rem;
+  color: #64748B;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ---------- TRUST SECTION ---------- */
+.trust-section {
+  background: #F4F8FC;
+  padding: 4rem 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.trust-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e8f0f7;
+  border-radius: 10px;
+  transition: box-shadow 0.2s;
+}
+
+.trust-item:hover {
+  box-shadow: 0 4px 16px rgba(16,42,67,0.07);
+}
+
+.trust-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.trust-icon-blue  { background: #EFF6FF; color: #1769AA; }
+.trust-icon-green { background: #F0FDF9; color: #138A63; }
+.trust-icon-teal  { background: #F0FBFF; color: #0e7490; }
+
+.trust-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #172B3A;
+  margin-bottom: 0.2rem;
+}
+
+.trust-desc {
+  font-size: 0.85rem;
+  color: #64748B;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 991px) {
+  .homepage-hero {
+    padding: 3rem 0;
+  }
+  .hero-col-right {
+    margin-top: 2.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  .site-header .nav-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: #102A43;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 0.75rem 1rem 1rem;
+    gap: 0.1rem;
+    z-index: 999;
+  }
+  .site-header .nav-links.open {
+    display: flex;
+  }
+  .site-header .hamburger-btn {
+    display: block;
+  }
+  .site-header .nav-cta {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-title {
+    font-size: 1.85rem;
+  }
+  .hero-subtitle {
+    font-size: 0.97rem;
+  }
+  .btn-hero-primary, .btn-hero-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+  .preview-card {
+    max-width: 100%;
+  }
+  .how-it-works {
+    padding: 3rem 0;
+  }
+}
+
+@media (max-width: 390px) {
+  .hero-title {
+    font-size: 1.6rem;
+  }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     SITE HEADER  (homepage only — replaces base navbar)
+     ============================================================ -->
+<header class="site-header">
+  <div class="container-xl px-3 px-lg-4">
+    <div class="d-flex align-items-center justify-content-between" style="height:60px; position:relative;">
+
+      <!-- Brand -->
+      <a href="{{ url_for('web.index') }}" class="brand-logo">
+        <span class="brand-icon"><i class="bi bi-water"></i></span>
+        <span class="brand-name">JalRaksha</span>
+      </a>
+
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger-btn" id="navToggle" aria-label="Toggle menu"
+              onclick="document.getElementById('navLinks').classList.toggle('open')">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <!-- Navigation links (role-aware) -->
+      <ul class="nav-links" id="navLinks">
+        <li><a href="{{ url_for('web.index') }}" class="active"><i class="bi bi-house me-1"></i>Home</a></li>
+
+        {% if session.get('user_id') %}
+          {% if session.get('user_role') == 'citizen' %}
+            <li><a href="{{ url_for('web.citizen_dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>My Dashboard</a></li>
+            <li><a href="{{ url_for('web.new_complaint') }}"><i class="bi bi-plus-circle me-1"></i>Report an Issue</a></li>
+            <li><a href="{{ url_for('web.citizen_complaints_list') }}"><i class="bi bi-journal-text me-1"></i>My Complaints</a></li>
+            <li><a href="{{ url_for('web.citizen_profile') }}"><i class="bi bi-person me-1"></i>Profile</a></li>
+          {% elif session.get('user_role') in ['officer', 'authority'] %}
+            <li><a href="{{ url_for('web.officer_dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>Dashboard</a></li>
+            <li><a href="{{ url_for('web.officer_complaints') }}"><i class="bi bi-inbox-fill me-1"></i>Complaints</a></li>
+            <li><a href="{{ url_for('web.officer_map') }}"><i class="bi bi-map-fill me-1"></i>Route Map</a></li>
+            <li><a href="{{ url_for('web.officer_inspections') }}"><i class="bi bi-clipboard-check me-1"></i>Inspections</a></li>
+          {% elif session.get('user_role') == 'admin' %}
+            <li><a href="{{ url_for('web.admin_dashboard') }}"><i class="bi bi-shield-shaded me-1"></i>Admin Dashboard</a></li>
+            <li><a href="{{ url_for('web.admin_water_bodies') }}"><i class="bi bi-droplet-fill me-1"></i>Water Bodies</a></li>
+            <li><a href="{{ url_for('web.admin_map') }}"><i class="bi bi-map me-1"></i>GIS Map</a></li>
+            <li><a href="{{ url_for('web.admin_reports') }}"><i class="bi bi-bar-chart-line me-1"></i>Reports</a></li>
+          {% endif %}
+        {% endif %}
+      </ul>
+
+      <!-- Right CTA / User pill -->
+      <div class="nav-cta">
+        {% if session.get('user_id') %}
+          <div class="user-pill">
+            <i class="bi bi-person-circle text-info"></i>
+            <span>{{ session.get('user_name','').split(' ')[0] }}</span>
+            <span class="badge ms-1 text-capitalize
+              {% if session.get('user_role') == 'admin' %}bg-danger
+              {% elif session.get('user_role') in ['officer','authority'] %}bg-warning text-dark
+              {% else %}bg-info text-dark{% endif %}"
+              style="font-size:0.68rem;">{{ session.get('user_role') }}</span>
+          </div>
+          <a href="/api/auth/logout" class="btn-header-outline"
+             id="logoutBtnHome"
+             onclick="event.preventDefault(); fetch('/api/auth/logout').then(()=>window.location.href='/login');">
+            <i class="bi bi-box-arrow-right me-1"></i>Logout
+          </a>
+        {% else %}
+          <a href="{{ url_for('web.login_page') }}" class="btn-header-outline" id="loginBtnHome">Sign In</a>
+          <a href="{{ url_for('web.register_page') }}" class="btn-header-primary" id="registerBtnHome">Register</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ============================================================
+     HERO SECTION — Two-column layout
+     ============================================================ -->
+<section class="homepage-hero">
+  <div class="container-xl px-3 px-lg-4">
+    <div class="row align-items-center g-5">
+
+      <!-- LEFT: Title, subtitle, buttons -->
+      <div class="col-lg-6 col-xl-6">
+        <div class="hero-badge">
+          <i class="bi bi-shield-check"></i>
+          Environmental Protection System
+        </div>
+
+        <h1 class="hero-title">
+          AI-Based Water Body<br>
+          <span class="accent">Encroachment System</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Report suspected encroachment, share location details, and track
+          complaints involving lakes, ponds, rivers, and canals.
+        </p>
+
+        <div class="hero-buttons">
+          {% if session.get('user_id') %}
+            {% if session.get('user_role') == 'citizen' %}
+              <a href="{{ url_for('web.new_complaint') }}" id="heroReportBtn" class="btn-hero-primary">
+                <i class="bi bi-plus-circle-fill"></i>Report an Issue
+              </a>
+              <a href="{{ url_for('web.citizen_dashboard') }}" id="heroTrackBtn" class="btn-hero-secondary">
+                <i class="bi bi-compass"></i>Track My Complaint
+              </a>
+            {% elif session.get('user_role') in ['officer','authority'] %}
+              <a href="{{ url_for('web.officer_dashboard') }}" id="heroOfficerBtn" class="btn-hero-primary">
+                <i class="bi bi-speedometer2"></i>Go to Dashboard
+              </a>
+            {% else %}
+              <a href="{{ url_for('web.admin_dashboard') }}" id="heroAdminBtn" class="btn-hero-primary">
+                <i class="bi bi-shield-shaded"></i>Admin Dashboard
+              </a>
+            {% endif %}
+          {% else %}
+            <a href="{{ url_for('web.register_page') }}" id="heroRegisterBtn" class="btn-hero-primary">
+              <i class="bi bi-plus-circle-fill"></i>Report an Issue
+            </a>
+            <a href="{{ url_for('web.login_page') }}" id="heroLoginBtn" class="btn-hero-secondary">
+              <i class="bi bi-search"></i>Track My Complaint
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- RIGHT: Complaint preview card -->
+      <div class="col-lg-6 col-xl-6 hero-col-right">
+        <div class="preview-card mx-auto mx-lg-0 ms-lg-auto">
+
+          <!-- Card header -->
+          <div class="preview-card-header">
+            <span class="preview-card-title">
+              <i class="bi bi-file-earmark-text text-primary"></i>
+              Complaint Overview
+            </span>
+            <span class="preview-example-badge">EXAMPLE</span>
+          </div>
+
+          <!-- Card body -->
+          <div class="preview-card-body">
+
+            <div class="preview-field">
+              <span class="preview-label">Status</span>
+              <span class="preview-value">
+                <span class="jr-badge badge-status-UNDER_VERIFICATION">
+                  <i class="bi bi-hourglass-split"></i>
+                  Awaiting Verification
+                </span>
+              </span>
+            </div>
+
+            <div class="preview-divider"></div>
+
+            <div class="preview-field">
+              <span class="preview-label">Complaint</span>
+              <span class="preview-value muted">
+                Unauthorized dumping near lake buffer zone
+              </span>
+            </div>
+
+            <div class="preview-field">
+              <span class="preview-label">Water Body</span>
+              <span class="preview-value">
+                <i class="bi bi-geo-alt-fill text-danger" style="font-size:0.85rem;"></i>
+                Bellandur Lake
+              </span>
+            </div>
+
+            <div class="preview-field">
+              <span class="preview-label">Reported</span>
+              <span class="preview-value">
+                <i class="bi bi-calendar3" style="font-size:0.82rem; color:#64748B;"></i>
+                <span style="color:#64748B; font-size:0.88rem;">Today</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Card footer -->
+          <div class="preview-footer">
+            <span style="font-size:0.78rem; color:#94a3b8;">
+              <i class="bi bi-info-circle me-1"></i>Illustrative preview only
+            </span>
+            <a href="{{ url_for('web.login_page') }}" class="btn btn-sm btn-outline-primary fw-semibold"
+               style="font-size:0.8rem; padding:0.3rem 0.8rem; border-radius:6px;">
+              View Complaint →
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     HOW IT WORKS  — Three step cards
+     ============================================================ -->
+<section class="how-it-works">
+  <div class="container-xl px-3 px-lg-4">
+
+    <div class="text-center mb-4">
+      <span class="section-badge">How It Works</span>
+      <h2 class="section-heading">How JalRaksha Works</h2>
+      <p class="section-subheading">
+        A simple, transparent process that connects citizens with the
+        responsible environmental authorities.
+      </p>
+    </div>
+
+    <div class="row g-4 mt-1">
+
+      <!-- Step 1 -->
+      <div class="col-md-4">
+        <div class="step-card">
+          <span class="step-number">01</span>
+          <div class="step-icon-wrap step-icon-blue">
+            <i class="bi bi-geo-alt-fill"></i>
+          </div>
+          <div class="step-title">Report</div>
+          <p class="step-desc">
+            Submit a complaint with a description, location pin on the interactive
+            GIS map, and supporting evidence or photos.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="col-md-4">
+        <div class="step-card">
+          <span class="step-number">02</span>
+          <div class="step-icon-wrap step-icon-teal">
+            <i class="bi bi-clipboard-check-fill"></i>
+          </div>
+          <div class="step-title">Review</div>
+          <p class="step-desc">
+            Your complaint is assessed and directed to the appropriate
+            Revenue, Municipal, or Water Resource authority for physical verification.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="col-md-4">
+        <div class="step-card">
+          <span class="step-number">03</span>
+          <div class="step-icon-wrap step-icon-cyan">
+            <i class="bi bi-check-circle-fill"></i>
+          </div>
+          <div class="step-title">Track</div>
+          <p class="step-desc">
+            Follow complaint updates in real time and review the official
+            inspection findings and resolution outcome from your dashboard.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     TRUST & TRANSPARENCY SECTION
+     ============================================================ -->
+<section class="trust-section">
+  <div class="container-xl px-3 px-lg-4">
+    <div class="row align-items-center g-5">
+
+      <!-- Left text -->
+      <div class="col-lg-5">
+        <span class="section-badge">Why JalRaksha</span>
+        <h2 class="section-heading" style="text-align:left; max-width:none;">
+          Reviewed by Responsible Officials
+        </h2>
+        <p style="color:#64748B; font-size:0.97rem; line-height:1.65; max-width:460px;">
+          JalRaksha bridges the gap between citizens and municipal authorities.
+          Every grievance is logged in an audited system and assigned to the
+          relevant department based on district jurisdiction and water body type.
+        </p>
+        <div class="mt-4">
+          {% if not session.get('user_id') %}
+            <a href="{{ url_for('web.register_page') }}" class="btn-hero-primary" id="trustRegisterBtn"
+               style="display:inline-flex; align-items:center; gap:0.4rem;">
+              <i class="bi bi-person-plus"></i>Create an Account
+            </a>
+          {% else %}
+            <a href="{{ url_for('web.new_complaint') }}" class="btn-hero-primary" id="trustReportBtn"
+               style="display:inline-flex; align-items:center; gap:0.4rem;">
+              <i class="bi bi-plus-circle"></i>Submit a Complaint
+            </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Right trust items -->
+      <div class="col-lg-7">
+        <div class="d-flex flex-column gap-3">
+
+          <div class="trust-item">
+            <div class="trust-icon trust-icon-blue">
+              <i class="bi bi-building-gear"></i>
+            </div>
+            <div>
+              <div class="trust-title">Direct Officer Routing</div>
+              <p class="trust-desc">
+                Complaints are assigned directly to Revenue, Municipal, or Water
+                Resource officers in charge of the relevant zone.
+              </p>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon trust-icon-teal">
+              <i class="bi bi-map-fill"></i>
+            </div>
+            <div>
+              <div class="trust-title">GIS Boundary Mapping</div>
+              <p class="trust-desc">
+                Reported locations are cross-referenced with mapped water body
+                boundaries and buffer zones to facilitate preliminary review.
+              </p>
+            </div>
+          </div>
+
+          <div class="trust-item">
+            <div class="trust-icon trust-icon-green">
+              <i class="bi bi-journal-check"></i>
+            </div>
+            <div>
+              <div class="trust-title">Clear Inspection Audit Trail</div>
+              <p class="trust-desc">
+                Track official status changes from initial lodgment through
+                physical site inspection to final resolution.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Close mobile nav when a link is clicked
+document.querySelectorAll('#navLinks a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.getElementById('navLinks').classList.remove('open');
+  });
+});
+</script>
+{% endblock %}

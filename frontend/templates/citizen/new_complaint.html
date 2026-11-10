@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}Report Water Body Encroachment | JalRaksha{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      
+      <!-- Page Header -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between mb-4 gap-2">
+        <div>
+          <span class="badge bg-primary-subtle text-primary px-3 py-1.5 rounded-pill fw-semibold mb-1">
+            <i class="bi bi-shield-plus me-1"></i> Citizen Grievance Portal
+          </span>
+          <h2 class="fw-bold font-heading mb-0 text-dark">Report Water Body Encroachment</h2>
+          <p class="text-muted small mb-0">Help preserve local water resources. Fill in the incident details below.</p>
+        </div>
+        <a href="{{ url_for('web.citizen_dashboard') }}" class="btn btn-jr-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="jr-card p-4 p-md-5 shadow-sm border-0 mb-4 bg-white">
+        <div id="submitAlert" class="alert alert-danger d-none py-2 small mb-4"></div>
+
+        <form id="complaintForm" enctype="multipart/form-data" novalidate>
+          
+          <!-- SECTION A: Complaint Details -->
+          <div class="border-bottom pb-4 mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="p-2 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">A</span>
+              <h5 class="fw-bold font-heading mb-0 text-dark">Complaint Details</h5>
+            </div>
+
+            <div class="row g-3">
+              <!-- Title -->
+              <div class="col-md-8">
+                <label class="form-label">Complaint Title <span class="text-danger">*</span></label>
+                <input type="text" id="title" name="title" class="form-control" placeholder="e.g., Unauthorized construction near Bellandur Lake shore" required>
+                <div class="invalid-feedback small">Please provide a clear title for your complaint.</div>
+              </div>
+
+              <!-- Water Body Selection -->
+              <div class="col-md-4">
+                <label class="form-label">Water Body Name <span class="text-muted fw-normal">(If known)</span></label>
+                <select id="water_body_id" name="water_body_id" class="form-select">
+                  <option value="">-- Select Water Body --</option>
+                  {% for wb in water_bodies %}
+                    <option value="{{ wb.id }}" 
+                            data-type="{{ wb.type }}"
+                            data-lat="{{ wb.center_latitude }}" 
+                            data-lng="{{ wb.center_longitude }}">
+                      {{ wb.name }} ({{ wb.type }}) - {{ wb.district }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <div class="form-text" style="font-size: 0.75rem;">If not listed, leave as default.</div>
+              </div>
+
+              <!-- Water Body Type (Auto-populated or selectable) -->
+              <div class="col-md-4">
+                <label class="form-label">Water Body Type</label>
+                <select id="water_body_type" class="form-select" disabled>
+                  <option value="">Auto-detected / Selected</option>
+                  <option value="LAKE">Lake / Tank</option>
+                  <option value="POND">Pond / Wetland</option>
+                  <option value="RIVER">River / Stream</option>
+                  <option value="CANAL">Canal / Stormwater Drain</option>
+                </select>
+              </div>
+
+              <!-- Description -->
+              <div class="col-md-8">
+                <label class="form-label">Detailed Description <span class="text-danger">*</span></label>
+                <textarea id="description" name="description" class="form-control" rows="3" placeholder="Describe the physical activity, heavy machinery, soil filling, boundary fencing, or structures being erected..." required></textarea>
+                <div class="invalid-feedback small">Please enter a detailed description of what you observed.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION B: Location Selection -->
+          <div class="border-bottom pb-4 mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <span class="p-2 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">B</span>
+                <h5 class="fw-bold font-heading mb-0 text-dark">Location Information</h5>
+              </div>
+              <button type="button" id="geoBtn" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-crosshair me-1"></i> Locate Me (GPS)
+              </button>
+            </div>
+
+            <!-- Leaflet Map Container -->
+            <div id="pickerMap" class="jr-map-container mb-3" style="height: 360px;"></div>
+            
+            <div class="alert alert-info py-2 small d-flex align-items-center gap-2 mb-3">
+              <i class="bi bi-info-circle-fill text-info fs-5"></i>
+              <div>
+                <strong>How to set location:</strong> Click anywhere on the map to place the red marker, or drag the marker to the exact spot. You can also enter coordinates manually below.
+              </div>
+            </div>
+
+            <div class="row g-3">
+              <div class="col-sm-6">
+                <label class="form-label">Latitude <span class="text-danger">*</span></label>
+                <input type="number" step="0.000001" id="latitude" name="latitude" class="form-control font-monospace" placeholder="12.9716" required>
+                <div class="invalid-feedback small">Latitude coordinate is required. Click the map to pick.</div>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label">Longitude <span class="text-danger">*</span></label>
+                <input type="number" step="0.000001" id="longitude" name="longitude" class="form-control font-monospace" placeholder="77.5946" required>
+                <div class="invalid-feedback small">Longitude coordinate is required. Click the map to pick.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION C: Site Observations & Evidence -->
+          <div class="border-bottom pb-4 mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+              <span class="p-2 bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; font-weight: 700;">C</span>
+              <h5 class="fw-bold font-heading mb-0 text-dark">Site Observations & Evidence</h5>
+            </div>
+
+            <div class="row g-3">
+              <!-- Observation check 1 -->
+              <div class="col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="has_construction" name="has_construction" value="true" checked>
+                    <label class="form-check-label fw-semibold text-dark" for="has_construction">
+                      Active Construction / Dumping Observed
+                    </label>
+                    <div class="text-muted small mt-1">
+                      Check if you observed earthmovers, dumped soil, foundation work, or boundary walls.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observation check 2 -->
+              <div class="col-md-6">
+                <div class="p-3 border rounded-3 bg-light h-100">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="has_permission" name="has_permission" value="true">
+                    <label class="form-check-label fw-semibold text-dark" for="has_permission">
+                      Official Permit / Notice Board Displayed
+                    </label>
+                    <div class="text-muted small mt-1">
+                      Check ONLY if an authorized sanction board with official order number is visibly posted.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Area level -->
+              <div class="col-md-6">
+                <label class="form-label">Estimated Affected Area Scale</label>
+                <select id="affected_area_level" name="affected_area_level" class="form-select">
+                  <option value="LOW">Minor / Small Scale (&lt; 200 sq. meters)</option>
+                  <option value="MEDIUM" selected>Moderate Scale (200 - 1000 sq. meters)</option>
+                  <option value="HIGH">Major Scale (&gt; 1000 sq. meters / Drainage Blockage)</option>
+                </select>
+              </div>
+
+              <!-- File upload -->
+              <div class="col-md-6">
+                <label class="form-label">Upload Photographic Evidence <span class="text-muted fw-normal">(Optional)</span></label>
+                <input type="file" id="evidence" name="evidence" class="form-control" accept="image/*,.pdf" multiple>
+                <div class="form-text" style="font-size: 0.75rem;">Supported formats: JPG, PNG, PDF. Maximum file size: 16 MB.</div>
+                
+                <!-- Selected File List Preview -->
+                <div id="filePreviewList" class="mt-2 d-flex flex-wrap gap-1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION D: Review & Submit -->
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pt-2">
+            <div class="small text-muted">
+              <i class="bi bi-shield-check text-success me-1"></i> Your complaint will be directed to the responsible authority for official review.
+            </div>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-jr-secondary" onclick="resetForm()">Reset</button>
+              <button type="submit" id="submitBtn" class="btn btn-jr-primary px-4">
+                <span id="submitSpinner" class="spinner-border spinner-border-sm me-2 d-none"></span> Submit Complaint
+              </button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let map, marker, boundaryLayerGroup;
+const defaultLat = 12.9716;
+const defaultLng = 77.5946;
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize Leaflet Map
+  map = L.map('pickerMap').setView([defaultLat, defaultLng], 12);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(map);
+
+  boundaryLayerGroup = L.layerGroup().addTo(map);
+
+  // Default marker placement
+  setMarker(defaultLat, defaultLng);
+
+  // Map Click Event
+  map.on('click', function(e) {
+    setMarker(e.latlng.lat, e.latlng.lng);
+  });
+
+  // Load water body polygons
+  loadWaterBodyPolygons();
+
+  // Handle Water Body dropdown selection
+  document.getElementById('water_body_id').addEventListener('change', function() {
+    const selected = this.options[this.selectedIndex];
+    const lat = parseFloat(selected.getAttribute('data-lat'));
+    const lng = parseFloat(selected.getAttribute('data-lng'));
+    const type = selected.getAttribute('data-type');
+    
+    if (type) {
+      document.getElementById('water_body_type').value = type;
+    } else {
+      document.getElementById('water_body_type').value = '';
+    }
+
+    if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+      map.setView([lat, lng], 14);
+      setMarker(lat, lng);
+    }
+  });
+
+  // GPS Locate Me Button Listener
+  document.getElementById('geoBtn').addEventListener('click', function() {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser. Please select location manually on the map.");
+      return;
+    }
+    const btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Locating...';
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        map.setView([lat, lng], 15);
+        setMarker(lat, lng);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-crosshair me-1"></i> Locate Me (GPS)';
+      },
+      (err) => {
+        alert("Location access failed or permission denied (" + err.message + "). You can still select your location by clicking on the map.");
+        btn.disabled = false;
+        btn.innerHTML = '<i class="bi bi-crosshair me-1"></i> Locate Me (GPS)';
+      },
+      { timeout: 10000, enableHighAccuracy: true }
+    );
+  });
+
+  // File Upload Preview & Validation Listener
+  document.getElementById('evidence').addEventListener('change', function() {
+    const previewContainer = document.getElementById('filePreviewList');
+    previewContainer.innerHTML = '';
+    const files = Array.from(this.files);
+    
+    let totalSizeMB = 0;
+    files.forEach(file => {
+      totalSizeMB += file.size / (1024 * 1024);
+      const fileBadge = document.createElement('span');
+      fileBadge.className = 'badge bg-light text-dark border me-1 mb-1 font-monospace';
+      fileBadge.style.fontSize = '0.72rem';
+      fileBadge.innerHTML = `<i class="bi bi-paperclip me-1"></i>${file.name} (${(file.size / 1024).toFixed(0)} KB)`;
+      previewContainer.appendChild(fileBadge);
+    });
+
+    if (totalSizeMB > 16) {
+      alert('Total upload size exceeds 16 MB. Please select smaller files.');
+      this.value = '';
+      previewContainer.innerHTML = '';
+    }
+  });
+});
+
+function setMarker(lat, lng) {
+  if (marker) {
+    marker.setLatLng([lat, lng]);
+  } else {
+    marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+    marker.on('dragend', function(e) {
+      const pos = e.target.getLatLng();
+      document.getElementById('latitude').value = pos.lat.toFixed(6);
+      document.getElementById('longitude').value = pos.lng.toFixed(6);
+    });
+  }
+  document.getElementById('latitude').value = lat.toFixed(6);
+  document.getElementById('longitude').value = lng.toFixed(6);
+}
+
+async function loadWaterBodyPolygons() {
+  try {
+    const res = await fetch('/api/water-bodies');
+    const data = await res.json();
+    if (data.success && data.water_bodies) {
+      data.water_bodies.forEach(wb => {
+        if (wb.boundary_data) {
+          try {
+            const geojson = JSON.parse(wb.boundary_data);
+            const layer = L.geoJSON(geojson, {
+              style: {
+                color: wb.type === 'CANAL' ? '#0284c7' : '#0891b2',
+                weight: 2,
+                fillColor: '#38bdf8',
+                fillOpacity: 0.2
+              }
+            }).bindPopup(`<strong>${wb.name}</strong><br>Type: ${wb.type}<br>District: ${wb.district}`);
+            boundaryLayerGroup.addLayer(layer);
+          } catch(e) {}
+        }
+      });
+    }
+  } catch (err) {
+    console.warn("Could not load water body polygons:", err);
+  }
+}
+
+function resetForm() {
+  document.getElementById('complaintForm').reset();
+  document.getElementById('filePreviewList').innerHTML = '';
+  setMarker(defaultLat, defaultLng);
+  map.setView([defaultLat, defaultLng], 12);
+}
+
+// Submit Form Handler with Duplicate Prevention & Inline Validations
+document.getElementById('complaintForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const form = this;
+  const alertBox = document.getElementById('submitAlert');
+  const spinner = document.getElementById('submitSpinner');
+  const btn = document.getElementById('submitBtn');
+
+  alertBox.classList.add('d-none');
+  
+  if (!form.checkValidity()) {
+    e.stopPropagation();
+    form.classList.add('was-validated');
+    alertBox.textContent = 'Please fix the highlighted fields before submitting.';
+    alertBox.classList.remove('d-none');
+    return;
+  }
+
+  // Prevent duplicate submission
+  spinner.classList.remove('d-none');
+  btn.disabled = true;
+
+  const formData = new FormData(form);
+
+  try {
+    const res = await fetch('/api/complaints', {
+      method: 'POST',
+      body: formData
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      window.location.href = `/citizen/complaints/${data.complaint.id}`;
+    } else {
+      alertBox.textContent = data.message || 'Failed to lodge complaint.';
+      alertBox.classList.remove('d-none');
+      spinner.classList.add('d-none');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    alertBox.textContent = 'Network or server error: ' + err.message;
+    alertBox.classList.remove('d-none');
+    spinner.classList.add('d-none');
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}

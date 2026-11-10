@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Officer Profile | JalRaksha Official Portal{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      
+      <div class="jr-card p-4 border-0 shadow-sm bg-white mb-4">
+        <div class="text-center mb-4">
+          <div class="d-inline-flex p-3 rounded-circle bg-warning-subtle text-warning-emphasis mb-2">
+            <i class="bi bi-shield-check fs-2"></i>
+          </div>
+          <h3 class="fw-bold font-heading mb-1">{{ user.name }}</h3>
+          <span class="badge bg-warning text-dark font-heading">Authorized Officer</span>
+        </div>
+
+        <div class="list-group list-group-flush border-top border-bottom mb-4">
+          <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+            <span class="text-muted"><i class="bi bi-envelope me-2"></i>Official Email:</span>
+            <strong class="text-dark">{{ user.email }}</strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+            <span class="text-muted"><i class="bi bi-telephone me-2"></i>Contact Phone:</span>
+            <strong class="text-dark">{{ user.phone or "+91-80-22220000" }}</strong>
+          </div>
+          <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+            <span class="text-muted"><i class="bi bi-award me-2"></i>System Role:</span>
+            <span class="badge bg-light text-dark border text-uppercase">{{ user.role }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex flex-column gap-2">
+          <a href="{{ url_for('web.officer_dashboard') }}" class="btn btn-jr-primary">
+            <i class="bi bi-speedometer2 me-1"></i> Go to Officer Dashboard
+          </a>
+          <a href="/api/auth/logout" class="btn btn-outline-danger" onclick="event.preventDefault(); fetch('/api/auth/logout').then(() => window.location.href='/login');">
+            <i class="bi bi-box-arrow-right me-1"></i> Sign Out
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
